@@ -5,9 +5,11 @@ explains a failure in every test that uses it.
 """
 
 import secrets
+import time
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.auth import USER_ROLE, ensure_user
@@ -51,3 +53,284 @@ def test_the_seed_makes_its_users_once(db_session: Session) -> None:
 
     assert seed(db_session, settings) == 2
     assert seed(db_session, settings) == 0
+
+
+def test_tc022_register_with_valid_unused_email_and_compliant_password(
+    client: TestClient, db_session: Session
+) -> None:
+    """AC-006: a valid registration creates an account, logs in, and the stored
+    record holds only a hash -- never the plaintext password -- anywhere."""
+    email = "dana.price@example.com"
+    password = "Sunshine8!"
+
+    register_response = client.post("/auth/register", json={"email": email, "password": password})
+
+    assert register_response.status_code == 201
+    assert register_response.json()["email"] == email
+    assert password not in register_response.text
+
+    login_response = client.post("/auth/login", json={"email": email, "password": password})
+
+    assert login_response.status_code == 200
+    assert login_response.json()["token"]
+
+    row = (
+        db_session.execute(text("SELECT * FROM users WHERE email = :email"), {"email": email})
+        .mappings()
+        .first()
+    )
+
+    assert row is not None
+    stored_strings = [value for value in row.values() if isinstance(value, str)]
+    assert password not in stored_strings
+    assert any(value.startswith("$2") for value in stored_strings)
+
+
+def test_tc024_reject_registration_when_the_email_already_has_an_account(
+    client: TestClient, db_session: Session
+) -> None:
+    """AC-007: registering again with an email already in use is rejected, and no
+    duplicate account is created."""
+    email = "mo.khan@example.com"
+    ensure_user(db_session, email=email, password=secrets.token_urlsafe(), role=USER_ROLE)
+
+    response = client.post("/auth/register", json={"email": email, "password": "Riverside9!"})
+
+    assert response.status_code == 409
+
+    login_response = client.post("/auth/login", json={"email": email, "password": "Riverside9!"})
+
+    assert login_response.status_code == 401
+
+
+def test_tc026_reject_registration_with_a_malformed_email(client: TestClient) -> None:
+    """AC-008: a malformed email is rejected with a validation message, and no
+    account is created."""
+    email = "not-an-email"
+    password = "Hillside7!"
+
+    response = client.post("/auth/register", json={"email": email, "password": password})
+
+    assert response.status_code == 422
+    detail = response.json()["detail"]
+    assert any("email" in str(error["loc"]) for error in detail)
+
+    login_response = client.post("/auth/login", json={"email": email, "password": password})
+
+    assert login_response.status_code == 401
+
+
+def test_tc027_reject_registration_with_a_password_that_fails_the_rules(
+    client: TestClient,
+) -> None:
+    """AC-008: a password that does not meet the stated rules is rejected with a
+    validation message, and no account is created."""
+    email = "owen.gray@example.com"
+    password = "abc123"
+
+    response = client.post("/auth/register", json={"email": email, "password": password})
+
+    assert response.status_code == 422
+    detail = response.json()["detail"]
+    assert any("password" in str(error["loc"]) for error in detail)
+
+    login_response = client.post("/auth/login", json={"email": email, "password": password})
+
+    assert login_response.status_code == 401
+
+
+def test_tc030_new_account_is_usable_immediately_with_no_verification_step(
+    client: TestClient,
+) -> None:
+    """AC-009: a freshly created account logs in and reaches /auth/me right away,
+    with no email-verification step in the way."""
+    email = "zoe.bell@example.com"
+    password = "Falcon123!"
+
+    register_response = client.post("/auth/register", json={"email": email, "password": password})
+
+    assert register_response.status_code == 201
+
+    login_response = client.post("/auth/login", json={"email": email, "password": password})
+
+    assert login_response.status_code == 200
+    token = login_response.json()["token"]
+
+    me_response = client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
+
+    assert me_response.status_code == 200
+    assert me_response.json()["email"] == email
+
+
+def test_tc012_successful_login_with_correct_credentials(client: TestClient) -> None:
+    """AC-010: a registered, active account logs in and receives an opaque session
+    token."""
+    email = "alice@example.com"
+    password = "Str0ngP@ss1"
+
+    register_response = client.post("/auth/register", json={"email": email, "password": password})
+
+    assert register_response.status_code == 201
+
+    login_response = client.post("/auth/login", json={"email": email, "password": password})
+
+    assert login_response.status_code == 200
+    assert login_response.json()["token"]
+
+
+def test_tc014_login_refused_for_a_deactivated_account(
+    client: TestClient, admin_client: TestClient
+) -> None:
+    """AC-010: a deactivated account cannot log in even with the correct password,
+    and no session token is returned.
+
+    The admin in the approved case (admin@example.com / AdminP@ss1) is replaced here
+    by the kit's `admin_client` fixture, which signs in as a freshly made admin through
+    the app itself: the kit never lets a test hard-code another account's credentials.
+    """
+    email = "bob@example.com"
+    password = "Str0ngP@ss1"
+
+    register_response = client.post("/auth/register", json={"email": email, "password": password})
+
+    assert register_response.status_code == 201
+    bob_id = register_response.json()["id"]
+
+    deactivate_response = admin_client.post(f"/admin/users/{bob_id}/deactivate")
+
+    assert deactivate_response.status_code == 200
+
+    login_response = client.post("/auth/login", json={"email": email, "password": password})
+
+    assert login_response.status_code != 200
+    assert "token" not in login_response.json()
+
+
+def test_tc016_login_refused_with_wrong_password(client: TestClient) -> None:
+    """AC-011, NFR-005: the correct email with the wrong password is refused with the
+    contract's generic message, and no session token is returned."""
+    email = "dave@example.com"
+
+    register_response = client.post(
+        "/auth/register", json={"email": email, "password": "Str0ngP@ss1"}
+    )
+
+    assert register_response.status_code == 201
+
+    login_response = client.post("/auth/login", json={"email": email, "password": "WrongPass1!"})
+
+    assert login_response.status_code == 401
+    body = login_response.json()
+    assert "token" not in body
+    assert body.get("detail") == "Incorrect email or password."
+
+
+def test_tc017_login_refused_with_unknown_email(client: TestClient) -> None:
+    """AC-011, NFR-005: an unregistered email is refused with the same generic
+    message as a wrong password, and no session token is returned."""
+    login_response = client.post(
+        "/auth/login", json={"email": "ghost@example.com", "password": "AnyPass1!"}
+    )
+
+    assert login_response.status_code == 401
+    body = login_response.json()
+    assert "token" not in body
+    assert body.get("detail") == "Incorrect email or password."
+
+
+def test_tc020_expired_session_rejected_on_a_protected_call(client: TestClient) -> None:
+    """AC-012, NFR-002: a session left inactive beyond the configured expiry period
+    is rejected on the next call that needs login, and no user data is returned.
+
+    The test environment is preconditioned to a 2 second inactivity expiry; this test
+    only waits past it and reuses the token, as the case's steps say.
+    """
+    email = "frank@example.com"
+    password = "Str0ngP@ss1"
+
+    register_response = client.post("/auth/register", json={"email": email, "password": password})
+
+    assert register_response.status_code == 201
+
+    login_response = client.post("/auth/login", json={"email": email, "password": password})
+
+    assert login_response.status_code == 200
+    token = login_response.json()["token"]
+
+    time.sleep(3)
+
+    me_response = client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
+
+    assert me_response.status_code == 401
+
+
+def test_tc001_logout_revokes_the_session_token(client: TestClient) -> None:
+    """AC-013: after logout, the same token can no longer be used to fetch the
+    current user."""
+    email = "alice@example.com"
+    password = "Str0ngP@ss1"
+
+    register_response = client.post("/auth/register", json={"email": email, "password": password})
+
+    assert register_response.status_code == 201
+
+    login_response = client.post("/auth/login", json={"email": email, "password": password})
+
+    assert login_response.status_code == 200
+    token = login_response.json()["token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    me_response = client.get("/auth/me", headers=headers)
+
+    assert me_response.status_code == 200
+    assert me_response.json()["email"] == email
+
+    logout_response = client.post("/auth/logout", headers=headers)
+
+    assert logout_response.status_code == 200
+
+    revoked_me_response = client.get("/auth/me", headers=headers)
+
+    assert revoked_me_response.status_code == 401
+
+
+def test_tc002_logged_out_session_cannot_perform_actions_that_need_login(
+    client: TestClient,
+) -> None:
+    """AC-013: after logout, an action requiring login (posting an idea) is
+    refused."""
+    email = "bob@example.com"
+    password = "Str0ngP@ss1"
+
+    register_response = client.post("/auth/register", json={"email": email, "password": password})
+
+    assert register_response.status_code == 201
+
+    login_response = client.post("/auth/login", json={"email": email, "password": password})
+
+    assert login_response.status_code == 200
+    token = login_response.json()["token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    logout_response = client.post("/auth/logout", headers=headers)
+
+    assert logout_response.status_code == 200
+
+    idea_response = client.post(
+        "/ideas",
+        json={
+            "title": "Dark mode toggle",
+            "description": "Add a dark mode option to the board",
+        },
+        headers=headers,
+    )
+
+    assert idea_response.status_code == 401
+
+
+def test_tc003_logout_without_a_token_is_refused(client: TestClient) -> None:
+    """AC-013: calling logout with no session token fails with 401 and no session
+    is affected."""
+    response = client.post("/auth/logout")
+
+    assert response.status_code == 401
