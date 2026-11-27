@@ -173,3 +173,26 @@ def current_user(
 
 def me(user: User) -> CurrentUser:
     return CurrentUser(id=str(getattr(user, _KEY)), email=user.email, role=user.role)
+
+
+def current_token(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)],
+) -> str:
+    """The raw bearer token of the current request, or SESSION_EXPIRED when it is
+    missing. Used alongside `current_user` by routes that need the token itself, such
+    as POST /auth/logout, which must revoke this one session and no other.
+    """
+    if credentials is None:
+        raise HTTPException(SESSION_EXPIRED.status, SESSION_EXPIRED.message)
+    return credentials.credentials
+
+
+def revoke_session(session: Session, token: str) -> None:
+    """Ends the session this token belongs to (AC-013, NFR-003).
+
+    Deletes the matching row in `sessions` outright rather than merely expiring it: once
+    revoked, the token resolves to no session at all, so `current_user` refuses it the
+    same way it refuses any other token it does not recognise.
+    """
+    session.query(UserSession).filter(UserSession.token_hash == _hash_token(token)).delete()
+    session.flush()

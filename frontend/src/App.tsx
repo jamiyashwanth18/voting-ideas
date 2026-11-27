@@ -1,6 +1,8 @@
-import { NavLink, Navigate, Outlet, Route, Routes } from "react-router-dom";
+import { NavLink, Navigate, Outlet, Route, Routes, useNavigate } from "react-router-dom";
 
 import { Icons } from "@/lib/icons";
+import { api } from "@/api/client";
+import { clearSessionToken } from "@/lib/api";
 import Ideas from "@/screens/Ideas";
 import Login from "@/screens/Login";
 import Register from "@/screens/Register";
@@ -14,6 +16,22 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 
 // The app's menu, drawn around every screen except the ones routed outside it below.
 function AppShellLayout() {
+  const navigate = useNavigate();
+
+  // AC-013 / NFR-003: logging out revokes the session token server-side, then clears
+  // it from this device either way, so the user can no longer perform actions that
+  // require login without logging in again.
+  async function handleLogout() {
+    try {
+      await api.POST("/auth/logout");
+    } catch {
+      // The session is still cleared locally below: a failed call to the server
+      // must not leave the user looking logged in on their own device.
+    }
+    clearSessionToken();
+    navigate("/login");
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <header
@@ -39,10 +57,15 @@ function AppShellLayout() {
               <Icons.Settings size={16} />
               {"Admin"}
             </NavLink>
-            <NavLink to="/login" className={navLinkClass}>
+            <button
+              type="button"
+              data-testid="log-out-btn"
+              onClick={handleLogout}
+              className={navLinkClass({ isActive: false })}
+            >
               <Icons.User size={16} />
               {"Log out"}
-            </NavLink>
+            </button>
           </nav>
         </div>
       </header>

@@ -262,3 +262,75 @@ def test_tc020_expired_session_rejected_on_a_protected_call(client: TestClient) 
     me_response = client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
 
     assert me_response.status_code == 401
+
+
+def test_tc001_logout_revokes_the_session_token(client: TestClient) -> None:
+    """AC-013: after logout, the same token can no longer be used to fetch the
+    current user."""
+    email = "alice@example.com"
+    password = "Str0ngP@ss1"
+
+    register_response = client.post("/auth/register", json={"email": email, "password": password})
+
+    assert register_response.status_code == 201
+
+    login_response = client.post("/auth/login", json={"email": email, "password": password})
+
+    assert login_response.status_code == 200
+    token = login_response.json()["token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    me_response = client.get("/auth/me", headers=headers)
+
+    assert me_response.status_code == 200
+    assert me_response.json()["email"] == email
+
+    logout_response = client.post("/auth/logout", headers=headers)
+
+    assert logout_response.status_code == 200
+
+    revoked_me_response = client.get("/auth/me", headers=headers)
+
+    assert revoked_me_response.status_code == 401
+
+
+def test_tc002_logged_out_session_cannot_perform_actions_that_need_login(
+    client: TestClient,
+) -> None:
+    """AC-013: after logout, an action requiring login (posting an idea) is
+    refused."""
+    email = "bob@example.com"
+    password = "Str0ngP@ss1"
+
+    register_response = client.post("/auth/register", json={"email": email, "password": password})
+
+    assert register_response.status_code == 201
+
+    login_response = client.post("/auth/login", json={"email": email, "password": password})
+
+    assert login_response.status_code == 200
+    token = login_response.json()["token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    logout_response = client.post("/auth/logout", headers=headers)
+
+    assert logout_response.status_code == 200
+
+    idea_response = client.post(
+        "/ideas",
+        json={
+            "title": "Dark mode toggle",
+            "description": "Add a dark mode option to the board",
+        },
+        headers=headers,
+    )
+
+    assert idea_response.status_code == 401
+
+
+def test_tc003_logout_without_a_token_is_refused(client: TestClient) -> None:
+    """AC-013: calling logout with no session token fails with 401 and no session
+    is affected."""
+    response = client.post("/auth/logout")
+
+    assert response.status_code == 401

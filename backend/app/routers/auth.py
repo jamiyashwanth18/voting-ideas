@@ -14,6 +14,11 @@ the one that was wrong and no session is started (AC-011, NFR-005).
 GET /auth/me returns the signed-in user for a still-valid session token, and
 SESSION_EXPIRED once that token is missing, revoked, or its session has expired from
 inactivity (AC-012, NFR-002).
+
+POST /auth/logout revokes the current session token server-side, so it can no longer
+be used for an action that requires login (AC-013, NFR-003). It is refused the same
+way as any other call behind a session, as SESSION_EXPIRED, when the token is already
+missing, revoked, or expired.
 """
 
 from typing import Annotated
@@ -21,7 +26,16 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.auth import USER_ROLE, authenticate, create_session, current_user, ensure_user, find_user
+from app.auth import (
+    USER_ROLE,
+    authenticate,
+    create_session,
+    current_token,
+    current_user,
+    ensure_user,
+    find_user,
+    revoke_session,
+)
 from app.database import get_db
 from app.errors import EMAIL_ALREADY_REGISTERED, INVALID_CREDENTIALS, SESSION_EXPIRED
 from app.models import User
@@ -79,3 +93,18 @@ def login(body: LoginRequest, session: Annotated[Session, Depends(get_db)]) -> L
 def me(user: Annotated[User, Depends(current_user)]) -> CurrentUser:
     """The signed-in user for a still-active session token (AC-012, NFR-002)."""
     return CurrentUser(id=user.id, email=user.email, role=user.role)
+
+
+@router.post(
+    "/logout",
+    status_code=204,
+    responses={SESSION_EXPIRED.status: {"description": SESSION_EXPIRED.message}},
+)
+def logout(
+    user: Annotated[User, Depends(current_user)],
+    token: Annotated[str, Depends(current_token)],
+    session: Annotated[Session, Depends(get_db)],
+) -> None:
+    """Revokes the current session token server-side (AC-013, NFR-003)."""
+    revoke_session(session, token)
+    session.commit()

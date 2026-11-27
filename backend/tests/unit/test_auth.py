@@ -19,7 +19,7 @@ from app.auth import (
 )
 from app.errors import INVALID_CREDENTIALS, SESSION_EXPIRED
 from app.models import UserSession
-from app.routers.auth import login, me
+from app.routers.auth import login, logout, me
 from app.schemas import LoginRequest
 
 
@@ -133,3 +133,50 @@ def test_ac012_an_unknown_token_is_rejected_as_an_expired_session(db_session: Se
         current_user(_bearer(secrets.token_urlsafe(32)), db_session)
 
     assert excinfo.value.status_code == SESSION_EXPIRED.status
+
+
+def test_ac013_logout_ends_the_session(db_session: Session) -> None:
+    email = _email()
+    password = secrets.token_urlsafe()
+    _register(db_session, email=email, password=password)
+    response = login(LoginRequest(email=email, password=password), db_session)
+    user = current_user(_bearer(response.token), db_session)
+
+    logout(user, response.token, db_session)
+
+    assert db_session.query(UserSession).count() == 0
+
+
+def test_ac013_logged_out_token_can_no_longer_be_used_for_an_action_requiring_login(
+    db_session: Session,
+) -> None:
+    email = _email()
+    password = secrets.token_urlsafe()
+    _register(db_session, email=email, password=password)
+    response = login(LoginRequest(email=email, password=password), db_session)
+    user = current_user(_bearer(response.token), db_session)
+
+    logout(user, response.token, db_session)
+
+    with pytest.raises(HTTPException) as excinfo:
+        current_user(_bearer(response.token), db_session)
+    assert excinfo.value.status_code == SESSION_EXPIRED.status
+    assert excinfo.value.detail == SESSION_EXPIRED.message
+
+
+def test_ac013_logout_does_not_revoke_another_users_session(db_session: Session) -> None:
+    email_a = _email()
+    password_a = secrets.token_urlsafe()
+    _register(db_session, email=email_a, password=password_a)
+    response_a = login(LoginRequest(email=email_a, password=password_a), db_session)
+
+    email_b = _email()
+    password_b = secrets.token_urlsafe()
+    _register(db_session, email=email_b, password=password_b)
+    response_b = login(LoginRequest(email=email_b, password=password_b), db_session)
+    user_b = current_user(_bearer(response_b.token), db_session)
+
+    logout(user_b, response_b.token, db_session)
+
+    user_a = current_user(_bearer(response_a.token), db_session)
+    assert user_a.email == email_a
