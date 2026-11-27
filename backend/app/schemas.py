@@ -5,6 +5,8 @@ generated route returns until it has been implemented. Every model is an ApiMode
 so its JSON uses camelCase names (app/api_model.py).
 """
 
+from pydantic import EmailStr, Field
+
 from app.api_model import ApiModel
 
 
@@ -39,3 +41,21 @@ class IdeaRead(ApiModel):
     title: str
     description: str
     upvote_count: int
+
+
+class RegisterRequest(ApiModel):
+    """POST /auth/register body: the email and password a visitor chooses (AC-006).
+
+    A malformed email or a password shorter than the stated rules is rejected here,
+    by FastAPI's own 422 validation response, before any handler runs (AC-008).
+    """
+
+    email: EmailStr = Field(max_length=254)
+    password: str = Field(min_length=8)
+
+
+class RegisterResponse(ApiModel):
+    """The account POST /auth/register created; never the password or its hash."""
+
+    id: str
+    email: str

@@ -38,6 +38,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register */
+        post: operations["register_auth_register_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ideas": {
         parameters: {
             query?: never;
@@ -119,6 +136,32 @@ export interface components {
             /** Token */
             token: string;
         };
+        /**
+         * RegisterRequest
+         * @description POST /auth/register body: the email and password a visitor chooses (AC-006).
+         *
+         *     A malformed email or a password shorter than the stated rules is rejected here,
+         *     by FastAPI's own 422 validation response, before any handler runs (AC-008).
+         */
+        RegisterRequest: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** Password */
+            password: string;
+        };
+        /**
+         * RegisterResponse
+         * @description The account POST /auth/register created; never the password or its hash.
+         */
+        RegisterResponse: {
+            /** Id */
+            id: string;
+            /** Email */
+            email: string;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -186,6 +229,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CurrentUser"];
+                };
+            };
+        };
+    };
+    register_auth_register_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterResponse"];
+                };
+            };
+            /** @description This email is already registered. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
