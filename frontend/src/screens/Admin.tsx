@@ -10,13 +10,32 @@ import { useNavigate } from "@/lib/navigate";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const { Button, Input, Label, Table, THead, TBody, TR, TH, TD, Avatar, Empty } = UI;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const { Search, Check, X, User, Users, Settings, Clock, Trash, ArrowLeft, ArrowRight, AlertCircle, CheckCircle } = Icons;
+const {
+  Search,
+  Check,
+  X,
+  User,
+  Users,
+  Settings,
+  Clock,
+  Trash,
+  ArrowLeft,
+  ArrowRight,
+  AlertCircle,
+  CheckCircle,
+} = Icons;
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 const hexToRgb = (hex) => {
   const h = String(hex || "").replace("#", "");
-  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  const full =
+    h.length === 3
+      ? h
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : h;
   const n = parseInt(full, 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 };
@@ -110,14 +129,63 @@ const SEED_IDEAS = [
 ];
 
 const SEED_USERS = [
-  { id: "u_001", email: "ops@ideaboard.co", created_at: "2026-09-02T09:00:00Z", is_active: true, is_admin: true },
-  { id: "u_104", email: "mara.ellis@northwind.co", created_at: "2026-09-14T11:22:00Z", is_active: true, is_admin: false },
-  { id: "u_109", email: "lena.ruiz@northwind.co", created_at: "2026-09-28T15:40:00Z", is_active: false, is_admin: false, deactivated_at: "2026-11-18T13:04:00Z" },
-  { id: "u_112", email: "s.delacroix@bellhaus.fr", created_at: "2026-10-03T08:10:00Z", is_active: true, is_admin: false },
-  { id: "u_118", email: "hollis.wynn@madisonave.io", created_at: "2026-10-11T19:35:00Z", is_active: true, is_admin: false },
-  { id: "u_127", email: "theo.brandt@aurelia.studio", created_at: "2026-10-22T13:18:00Z", is_active: true, is_admin: false },
-  { id: "u_131", email: "june.okafor@pelham.dev", created_at: "2026-11-02T07:29:00Z", is_active: true, is_admin: false },
-  { id: "u_144", email: "vance.hollow@mailinator.test", created_at: "2026-11-23T23:58:00Z", is_active: true, is_admin: false },
+  {
+    id: "u_001",
+    email: "ops@ideaboard.co",
+    created_at: "2026-09-02T09:00:00Z",
+    is_active: true,
+    is_admin: true,
+  },
+  {
+    id: "u_104",
+    email: "mara.ellis@northwind.co",
+    created_at: "2026-09-14T11:22:00Z",
+    is_active: true,
+    is_admin: false,
+  },
+  {
+    id: "u_109",
+    email: "lena.ruiz@northwind.co",
+    created_at: "2026-09-28T15:40:00Z",
+    is_active: false,
+    is_admin: false,
+    deactivated_at: "2026-11-18T13:04:00Z",
+  },
+  {
+    id: "u_112",
+    email: "s.delacroix@bellhaus.fr",
+    created_at: "2026-10-03T08:10:00Z",
+    is_active: true,
+    is_admin: false,
+  },
+  {
+    id: "u_118",
+    email: "hollis.wynn@madisonave.io",
+    created_at: "2026-10-11T19:35:00Z",
+    is_active: true,
+    is_admin: false,
+  },
+  {
+    id: "u_127",
+    email: "theo.brandt@aurelia.studio",
+    created_at: "2026-10-22T13:18:00Z",
+    is_active: true,
+    is_admin: false,
+  },
+  {
+    id: "u_131",
+    email: "june.okafor@pelham.dev",
+    created_at: "2026-11-02T07:29:00Z",
+    is_active: true,
+    is_admin: false,
+  },
+  {
+    id: "u_144",
+    email: "vance.hollow@mailinator.test",
+    created_at: "2026-11-23T23:58:00Z",
+    is_active: true,
+    is_admin: false,
+  },
 ];
 
 const TABS = [
@@ -129,21 +197,36 @@ const Ornament = ({ className = "" }) => (
   <div className={`flex items-center ${className}`} aria-hidden="true">
     <span className="flex-1">
       <span className="block h-px" style={{ backgroundColor: brand.accentColor }} />
-      <span className="mt-1 block h-px" style={{ backgroundColor: rgba(brand.primaryColor, 0.28) }} />
+      <span
+        className="mt-1 block h-px"
+        style={{ backgroundColor: rgba(brand.primaryColor, 0.28) }}
+      />
     </span>
     <span
       className="mx-3 block"
-      style={{ width: 8, height: 8, transform: "rotate(45deg)", backgroundColor: brand.primaryColor }}
+      style={{
+        width: 8,
+        height: 8,
+        transform: "rotate(45deg)",
+        backgroundColor: brand.primaryColor,
+      }}
     />
     <span className="flex-1">
       <span className="block h-px" style={{ backgroundColor: brand.accentColor }} />
-      <span className="mt-1 block h-px" style={{ backgroundColor: rgba(brand.primaryColor, 0.28) }} />
+      <span
+        className="mt-1 block h-px"
+        style={{ backgroundColor: rgba(brand.primaryColor, 0.28) }}
+      />
     </span>
   </div>
 );
 
 const Frame = ({ children, className = "", surface = true, ...rest }) => (
-  <div className={className} style={{ border: `1px solid ${brand.primaryColor}`, padding: 4 }} {...rest}>
+  <div
+    className={className}
+    style={{ border: `1px solid ${brand.primaryColor}`, padding: 4 }}
+    {...rest}
+  >
     <div
       style={{
         border: `1px solid ${brand.accentColor}`,
@@ -195,7 +278,7 @@ export default function Screen() {
 
   const ideaCount = React.useCallback(
     (userId) => ideas.filter((i) => i.author_id === userId).length,
-    [ideas]
+    [ideas],
   );
 
   const authorOf = React.useCallback(
@@ -203,7 +286,7 @@ export default function Screen() {
       const u = users.find((x) => x.id === authorId);
       return u ? u.email : "account removed";
     },
-    [users]
+    [users],
   );
 
   const sortedIdeas = React.useMemo(() => {
@@ -221,7 +304,7 @@ export default function Screen() {
       (i) =>
         i.title.toLowerCase().includes(q) ||
         i.id.toLowerCase().includes(q) ||
-        authorOf(i.author_id).toLowerCase().includes(q)
+        authorOf(i.author_id).toLowerCase().includes(q),
     );
   }, [sortedIdeas, ideaQuery, authorOf]);
 
@@ -266,8 +349,10 @@ export default function Screen() {
         const count = ideaCount(item.id);
         setUsers((prev) =>
           prev.map((u) =>
-            u.id === item.id ? { ...u, is_active: false, deactivated_at: new Date().toISOString() } : u
-          )
+            u.id === item.id
+              ? { ...u, is_active: false, deactivated_at: new Date().toISOString() }
+              : u,
+          ),
         );
         setNotice({
           tone: count > 0 ? "warn" : "success",
@@ -289,12 +374,18 @@ export default function Screen() {
     }
     if (e.key !== "Tab") return;
     const nodes = [closeBtnRef.current, confirmBtnRef.current, cancelBtnRef.current].filter(
-      (n) => n && !n.disabled
+      (n) => n && !n.disabled,
     );
     if (nodes.length === 0) return;
     const idx = nodes.indexOf(document.activeElement);
     e.preventDefault();
-    const next = e.shiftKey ? (idx <= 0 ? nodes.length - 1 : idx - 1) : (idx === nodes.length - 1 ? 0 : idx + 1);
+    const next = e.shiftKey
+      ? idx <= 0
+        ? nodes.length - 1
+        : idx - 1
+      : idx === nodes.length - 1
+        ? 0
+        : idx + 1;
     nodes[next].focus();
   };
 
@@ -339,8 +430,18 @@ export default function Screen() {
   `;
 
   const noticeTone = (tone) => {
-    if (tone === "error") return { border: brand.primaryColor, bg: rgba(brand.primaryColor, 0.08), label: "Nothing removed" };
-    if (tone === "warn") return { border: brand.primaryColor, bg: rgba(brand.accentColor, 0.2), label: "Done, with a note" };
+    if (tone === "error")
+      return {
+        border: brand.primaryColor,
+        bg: rgba(brand.primaryColor, 0.08),
+        label: "Nothing removed",
+      };
+    if (tone === "warn")
+      return {
+        border: brand.primaryColor,
+        bg: rgba(brand.accentColor, 0.2),
+        label: "Done, with a note",
+      };
     return { border: brand.accentColor, bg: rgba(brand.accentColor, 0.26), label: "Done" };
   };
 
@@ -354,9 +455,17 @@ export default function Screen() {
         role={notice.tone === "error" ? "alert" : "status"}
       >
         {notice.tone === "error" ? (
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" style={{ color: brand.primaryColor }} aria-hidden="true" />
+          <AlertCircle
+            className="mt-0.5 h-4 w-4 shrink-0"
+            style={{ color: brand.primaryColor }}
+            aria-hidden="true"
+          />
         ) : (
-          <CheckCircle className="mt-0.5 h-4 w-4 shrink-0" style={{ color: brand.primaryColor }} aria-hidden="true" />
+          <CheckCircle
+            className="mt-0.5 h-4 w-4 shrink-0"
+            style={{ color: brand.primaryColor }}
+            aria-hidden="true"
+          />
         )}
         <p className="flex-1 text-sm leading-6" style={{ color: brand.primaryColor }}>
           <span className={`${capLabel} mr-2`}>{t.label}</span>
@@ -383,9 +492,18 @@ export default function Screen() {
       <ul className="space-y-4">
         {Array.from({ length: rows }).map((_, i) => (
           <li key={i} className="flex items-center gap-4">
-            <span className="dz-skel block h-3 flex-1" style={{ backgroundColor: rgba(brand.primaryColor, 0.3) }} />
-            <span className="dz-skel hidden h-3 w-32 sm:block" style={{ backgroundColor: rgba(brand.accentColor, 0.6) }} />
-            <span className="dz-skel block h-3 w-14" style={{ backgroundColor: rgba(brand.primaryColor, 0.2) }} />
+            <span
+              className="dz-skel block h-3 flex-1"
+              style={{ backgroundColor: rgba(brand.primaryColor, 0.3) }}
+            />
+            <span
+              className="dz-skel hidden h-3 w-32 sm:block"
+              style={{ backgroundColor: rgba(brand.accentColor, 0.6) }}
+            />
+            <span
+              className="dz-skel block h-3 w-14"
+              style={{ backgroundColor: rgba(brand.primaryColor, 0.2) }}
+            />
           </li>
         ))}
       </ul>
@@ -417,7 +535,11 @@ export default function Screen() {
     <div
       id="dz-admin"
       className="min-h-full px-4 py-10 sm:px-6 lg:px-10"
-      style={{ backgroundColor: brand.backgroundColor, fontFamily: brand.fontBody, color: brand.primaryColor }}
+      style={{
+        backgroundColor: brand.backgroundColor,
+        fontFamily: brand.fontBody,
+        color: brand.primaryColor,
+      }}
     >
       <style>{css}</style>
 
@@ -505,10 +627,7 @@ export default function Screen() {
           >
             <Notice />
             <Frame data-wf="b-3-0">
-              <CardTop
-                title="All ideas (any author)"
-                count={`${ideas.length} on the board`}
-              >
+              <CardTop title="All ideas (any author)" count={`${ideas.length} on the board`}>
                 <div className="w-full md:w-72">
                   <Label htmlFor="dz-idea-search" className={`${capLabel} mb-2 block`} style={soft}>
                     Find an idea
@@ -576,26 +695,55 @@ export default function Screen() {
                   <Table className="w-full" style={{ fontVariantNumeric: "tabular-nums" }}>
                     <THead>
                       <TR style={{ borderBottom: `1px solid ${rgba(brand.primaryColor, 0.35)}` }}>
-                        <TH data-wf="i-3-0-0" scope="col" className={`${capLabel} px-4 py-3 text-left sm:px-6`} style={soft}>
+                        <TH
+                          data-wf="i-3-0-0"
+                          scope="col"
+                          className={`${capLabel} px-4 py-3 text-left sm:px-6`}
+                          style={soft}
+                        >
                           Title
                         </TH>
-                        <TH data-wf="i-3-0-1" scope="col" className={`${capLabel} hidden px-4 py-3 text-left md:table-cell`} style={soft}>
+                        <TH
+                          data-wf="i-3-0-1"
+                          scope="col"
+                          className={`${capLabel} hidden px-4 py-3 text-left md:table-cell`}
+                          style={soft}
+                        >
                           Author
                         </TH>
-                        <TH data-wf="i-3-0-2" scope="col" className={`${capLabel} px-4 py-3 text-right`} style={soft}>
+                        <TH
+                          data-wf="i-3-0-2"
+                          scope="col"
+                          className={`${capLabel} px-4 py-3 text-right`}
+                          style={soft}
+                        >
                           Upvotes
                         </TH>
-                        <TH data-wf="i-3-0-3" scope="col" className={`${capLabel} hidden px-4 py-3 text-left sm:table-cell`} style={soft}>
+                        <TH
+                          data-wf="i-3-0-3"
+                          scope="col"
+                          className={`${capLabel} hidden px-4 py-3 text-left sm:table-cell`}
+                          style={soft}
+                        >
                           Created
                         </TH>
-                        <TH data-wf="i-3-0-4" scope="col" className={`${capLabel} px-4 py-3 text-right sm:px-6`} style={soft}>
+                        <TH
+                          data-wf="i-3-0-4"
+                          scope="col"
+                          className={`${capLabel} px-4 py-3 text-right sm:px-6`}
+                          style={soft}
+                        >
                           Remove
                         </TH>
                       </TR>
                     </THead>
                     <TBody>
                       {visibleIdeas.map((idea) => (
-                        <TR key={idea.id} className="dz-row dz-enter" style={{ borderBottom: `1px solid ${hair}` }}>
+                        <TR
+                          key={idea.id}
+                          className="dz-row dz-enter"
+                          style={{ borderBottom: `1px solid ${hair}` }}
+                        >
                           <TD className="px-4 py-4 align-top sm:px-6">
                             <button
                               type="button"
@@ -614,14 +762,20 @@ export default function Screen() {
                             {idea.flagged && (
                               <span
                                 className={`${capLabel} mt-2 inline-flex items-center gap-1.5 px-2 py-1`}
-                                style={{ border: `1px solid ${brand.primaryColor}`, color: brand.primaryColor }}
+                                style={{
+                                  border: `1px solid ${brand.primaryColor}`,
+                                  color: brand.primaryColor,
+                                }}
                               >
                                 <AlertCircle className="h-3 w-3" aria-hidden="true" />
                                 Advertising
                               </span>
                             )}
                           </TD>
-                          <TD className="hidden px-4 py-4 align-top text-sm md:table-cell" style={{ color: brand.primaryColor }}>
+                          <TD
+                            className="hidden px-4 py-4 align-top text-sm md:table-cell"
+                            style={{ color: brand.primaryColor }}
+                          >
                             {authorOf(idea.author_id)}
                             <span className="mt-1 block text-xs tabular-nums" style={soft}>
                               {idea.author_id}
@@ -639,7 +793,10 @@ export default function Screen() {
                               {idea.upvotes}
                             </span>
                           </TD>
-                          <TD className="hidden px-4 py-4 align-top text-sm tabular-nums sm:table-cell" style={soft}>
+                          <TD
+                            className="hidden px-4 py-4 align-top text-sm tabular-nums sm:table-cell"
+                            style={soft}
+                          >
                             {fmtDate(idea.created_at)}
                           </TD>
                           <TD className="px-4 py-4 align-top text-right sm:px-6">
@@ -673,7 +830,10 @@ export default function Screen() {
           >
             <Notice />
             <Frame data-wf="b-4-0">
-              <CardTop title="Users" count={`${users.filter((u) => u.is_active).length} active of ${users.length}`}>
+              <CardTop
+                title="Users"
+                count={`${users.filter((u) => u.is_active).length} active of ${users.length}`}
+              >
                 <div className="w-full md:w-72">
                   <Label htmlFor="dz-user-search" className={`${capLabel} mb-2 block`} style={soft}>
                     Find a member
@@ -712,7 +872,10 @@ export default function Screen() {
                     title={`No member matches “${userQuery.trim()}”`}
                     description={`Search by the full email address or a user id such as u_118. ${users.length} accounts are registered.`}
                     action={
-                      <Button className="dz-btn dz-btn-quiet px-6 py-3 text-xs" onClick={() => setUserQuery("")}>
+                      <Button
+                        className="dz-btn dz-btn-quiet px-6 py-3 text-xs"
+                        onClick={() => setUserQuery("")}
+                      >
                         Clear search
                       </Button>
                     }
@@ -723,19 +886,44 @@ export default function Screen() {
                   <Table className="w-full" style={{ fontVariantNumeric: "tabular-nums" }}>
                     <THead>
                       <TR style={{ borderBottom: `1px solid ${rgba(brand.primaryColor, 0.35)}` }}>
-                        <TH data-wf="i-4-0-0" scope="col" className={`${capLabel} px-4 py-3 text-left sm:px-6`} style={soft}>
+                        <TH
+                          data-wf="i-4-0-0"
+                          scope="col"
+                          className={`${capLabel} px-4 py-3 text-left sm:px-6`}
+                          style={soft}
+                        >
                           Email
                         </TH>
-                        <TH data-wf="i-4-0-1" scope="col" className={`${capLabel} hidden px-4 py-3 text-left sm:table-cell`} style={soft}>
+                        <TH
+                          data-wf="i-4-0-1"
+                          scope="col"
+                          className={`${capLabel} hidden px-4 py-3 text-left sm:table-cell`}
+                          style={soft}
+                        >
                           Created
                         </TH>
-                        <TH data-wf="i-4-0-2" scope="col" className={`${capLabel} px-4 py-3 text-left`} style={soft}>
+                        <TH
+                          data-wf="i-4-0-2"
+                          scope="col"
+                          className={`${capLabel} px-4 py-3 text-left`}
+                          style={soft}
+                        >
                           Status
                         </TH>
-                        <TH data-wf="i-4-0-3" scope="col" className={`${capLabel} px-4 py-3 text-right`} style={soft}>
+                        <TH
+                          data-wf="i-4-0-3"
+                          scope="col"
+                          className={`${capLabel} px-4 py-3 text-right`}
+                          style={soft}
+                        >
                           Ideas
                         </TH>
-                        <TH data-wf="i-4-0-4" scope="col" className={`${capLabel} px-4 py-3 text-right sm:px-6`} style={soft}>
+                        <TH
+                          data-wf="i-4-0-4"
+                          scope="col"
+                          className={`${capLabel} px-4 py-3 text-right sm:px-6`}
+                          style={soft}
+                        >
                           Deactivate
                         </TH>
                       </TR>
@@ -744,22 +932,38 @@ export default function Screen() {
                       {visibleUsers.map((u) => {
                         const count = ideaCount(u.id);
                         return (
-                          <TR key={u.id} className="dz-row dz-enter" style={{ borderBottom: `1px solid ${hair}` }}>
+                          <TR
+                            key={u.id}
+                            className="dz-row dz-enter"
+                            style={{ borderBottom: `1px solid ${hair}` }}
+                          >
                             <TD className="px-4 py-4 align-top sm:px-6">
                               <div className="flex items-start gap-3">
-                                <Avatar name={u.email} className="hidden h-8 w-8 shrink-0 sm:block" />
+                                <Avatar
+                                  name={u.email}
+                                  className="hidden h-8 w-8 shrink-0 sm:block"
+                                />
                                 <div>
-                                  <span className="block text-[15px] leading-6" style={{ color: brand.primaryColor }}>
+                                  <span
+                                    className="block text-[15px] leading-6"
+                                    style={{ color: brand.primaryColor }}
+                                  >
                                     {u.email}
                                   </span>
                                   <span className="mt-0.5 block text-xs tabular-nums" style={soft}>
                                     {u.id}
-                                    <span className="sm:hidden"> · joined {fmtDate(u.created_at)}</span>
+                                    <span className="sm:hidden">
+                                      {" "}
+                                      · joined {fmtDate(u.created_at)}
+                                    </span>
                                   </span>
                                   {u.is_admin && (
                                     <span
                                       className={`${capLabel} mt-2 inline-flex items-center gap-1.5 px-2 py-1`}
-                                      style={{ backgroundColor: brand.primaryColor, color: brand.accentColor }}
+                                      style={{
+                                        backgroundColor: brand.primaryColor,
+                                        color: brand.accentColor,
+                                      }}
                                     >
                                       <Settings className="h-3 w-3" aria-hidden="true" />
                                       Admin · seed
@@ -768,7 +972,10 @@ export default function Screen() {
                                 </div>
                               </div>
                             </TD>
-                            <TD className="hidden px-4 py-4 align-top text-sm tabular-nums sm:table-cell" style={soft}>
+                            <TD
+                              className="hidden px-4 py-4 align-top text-sm tabular-nums sm:table-cell"
+                              style={soft}
+                            >
                               {fmtDate(u.created_at)}
                             </TD>
                             <TD className="px-4 py-4 align-top">
@@ -776,7 +983,9 @@ export default function Screen() {
                                 className={`${capLabel} inline-flex items-center gap-1.5 px-2 py-1`}
                                 style={{
                                   border: `1px solid ${u.is_active ? brand.accentColor : brand.primaryColor}`,
-                                  backgroundColor: u.is_active ? rgba(brand.accentColor, 0.3) : rgba(brand.primaryColor, 0.08),
+                                  backgroundColor: u.is_active
+                                    ? rgba(brand.accentColor, 0.3)
+                                    : rgba(brand.primaryColor, 0.08),
                                   color: brand.primaryColor,
                                 }}
                               >
@@ -793,7 +1002,10 @@ export default function Screen() {
                                 </span>
                               )}
                             </TD>
-                            <TD className="px-4 py-4 align-top text-right text-sm tabular-nums" style={{ color: brand.primaryColor }}>
+                            <TD
+                              className="px-4 py-4 align-top text-right text-sm tabular-nums"
+                              style={{ color: brand.primaryColor }}
+                            >
                               {count}
                             </TD>
                             <TD className="px-4 py-4 align-top text-right sm:px-6">
@@ -850,8 +1062,17 @@ export default function Screen() {
             className="dz-enter w-full max-w-lg"
             style={{ boxShadow: `0 24px 60px ${rgba(brand.primaryColor, 0.45)}` }}
           >
-            <div style={{ border: `1px solid ${brand.accentColor}`, padding: 4, backgroundColor: brand.backgroundColor }}>
-              <div style={{ border: `1px solid ${brand.primaryColor}` }} className="px-6 py-7 sm:px-8">
+            <div
+              style={{
+                border: `1px solid ${brand.accentColor}`,
+                padding: 4,
+                backgroundColor: brand.backgroundColor,
+              }}
+            >
+              <div
+                style={{ border: `1px solid ${brand.primaryColor}` }}
+                className="px-6 py-7 sm:px-8"
+              >
                 <div className="flex items-start justify-between gap-4">
                   <p className={capLabel} style={soft}>
                     {confirm.kind === "idea" ? "Confirm removal" : "Confirm deactivation"}
@@ -873,7 +1094,9 @@ export default function Screen() {
                   className="mt-4 text-center text-xl uppercase tracking-[0.22em]"
                   style={{ fontFamily: brand.fontHeading, color: brand.primaryColor }}
                 >
-                  {confirm.kind === "idea" ? "Remove this idea and its upvotes?" : "Deactivate this account?"}
+                  {confirm.kind === "idea"
+                    ? "Remove this idea and its upvotes?"
+                    : "Deactivate this account?"}
                 </h2>
 
                 <Ornament className="mx-auto mt-5 max-w-xs" />
@@ -886,10 +1109,12 @@ export default function Screen() {
                       </p>
                       <p className="mt-2 text-sm leading-6 tabular-nums" style={soft}>
                         {authorOf(confirm.item.author_id)} · {confirm.item.upvotes} upvote
-                        {confirm.item.upvotes === 1 ? "" : "s"} · posted {fmtDate(confirm.item.created_at)}
+                        {confirm.item.upvotes === 1 ? "" : "s"} · posted{" "}
+                        {fmtDate(confirm.item.created_at)}
                       </p>
                       <p className="mx-auto mt-4 max-w-sm text-sm leading-6" style={soft}>
-                        The idea and every vote cast on it are deleted from the public board. This cannot be undone.
+                        The idea and every vote cast on it are deleted from the public board. This
+                        cannot be undone.
                       </p>
                     </>
                   ) : (
@@ -898,12 +1123,13 @@ export default function Screen() {
                         {confirm.item.email}
                       </p>
                       <p className="mt-2 text-sm leading-6 tabular-nums" style={soft}>
-                        {confirm.item.id} · joined {fmtDate(confirm.item.created_at)} · {ideaCount(confirm.item.id)} idea
+                        {confirm.item.id} · joined {fmtDate(confirm.item.created_at)} ·{" "}
+                        {ideaCount(confirm.item.id)} idea
                         {ideaCount(confirm.item.id) === 1 ? "" : "s"}
                       </p>
                       <p className="mx-auto mt-4 max-w-sm text-sm leading-6" style={soft}>
-                        They are signed out of every session at once and cannot log in, post or vote again. Their existing
-                        ideas stay on the board until you remove them.
+                        They are signed out of every session at once and cannot log in, post or vote
+                        again. Their existing ideas stay on the board until you remove them.
                       </p>
                     </>
                   )}
@@ -922,8 +1148,8 @@ export default function Screen() {
                         ? "Removing…"
                         : "Deactivating…"
                       : confirm.kind === "idea"
-                      ? "Remove idea"
-                      : "Deactivate account"}
+                        ? "Remove idea"
+                        : "Deactivate account"}
                   </Button>
                   <Button
                     data-wf="b-6-1"

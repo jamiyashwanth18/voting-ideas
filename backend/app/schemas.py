@@ -30,3 +30,12 @@ class UserRead(ApiModel):
     id: str
     email: str
     role: str
+
+
+class IdeaRead(ApiModel):
+    """One idea as shown on the public board (US-001)."""
+
+    id: str
+    title: str
+    description: str
+    upvote_count: int

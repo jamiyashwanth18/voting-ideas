@@ -17,6 +17,7 @@ from sqlalchemy import inspect
 
 from app import auth
 from app.database import DATABASE_URL, engine
+from app.routers import ideas
 from app.seed import seed_from_env
 
 _ALEMBIC_INI = Path(__file__).resolve().parent.parent / "alembic.ini"
@@ -63,7 +64,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(
     title="Voting ideas",
-    description="Build a small Idea Voting Board with sign up. Features 1. Sign up with email and password. Log in and log out. 2. Post an idea (title, short description). Logged-in users only. 3. List ideas by votes, highest first. Anyone can view. 4. Upvote an idea. One vote per user per idea.",
+    description=(
+        "Build a small Idea Voting Board with sign up. Features 1. Sign up with email "
+        "and password. Log in and log out. 2. Post an idea (title, short description). "
+        "Logged-in users only. 3. List ideas by votes, highest first. Anyone can view. "
+        "4. Upvote an idea. One vote per user per idea."
+    ),
     version="0.1.0",
     lifespan=lifespan,
 )
@@ -82,6 +88,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(auth.router)
+app.include_router(ideas.router)
 
 
 @app.get("/health")

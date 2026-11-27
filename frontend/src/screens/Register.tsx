@@ -30,7 +30,13 @@ const EMAIL_MAX = 254;
 
 function gxAlpha(hex, a) {
   const h = String(hex || "#000000").replace("#", "");
-  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  const full =
+    h.length === 3
+      ? h
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : h;
   const n = parseInt(full, 16);
   const r = (n >> 16) & 255;
   const g = (n >> 8) & 255;
@@ -75,8 +81,7 @@ export default function Screen() {
   if (!password) {
     errors.password = "Choose a password of at least 8 characters.";
   } else if (!longEnough) {
-    errors.password =
-      "Use at least 8 characters. Yours has " + password.length + ".";
+    errors.password = "Use at least 8 characters. Yours has " + password.length + ".";
   }
   if (!confirm) {
     errors.confirm = "Type the password a second time to confirm it.";
@@ -92,9 +97,7 @@ export default function Screen() {
   React.useEffect(() => {
     if (status !== "submitting") return undefined;
     const t = setTimeout(() => {
-      const taken = REGISTERED_EMAILS.some(
-        (e) => e.toLowerCase() === trimmedEmail.toLowerCase()
-      );
+      const taken = REGISTERED_EMAILS.some((e) => e.toLowerCase() === trimmedEmail.toLowerCase());
       if (taken) {
         setStatus("idle");
         setFormError({
@@ -170,18 +173,12 @@ export default function Screen() {
         <span className="mt-[3px] block h-px" style={{ backgroundColor: accent }} />
       </span>
       <span className="mx-3 flex items-center gap-[6px]">
-        <span
-          className="block h-[5px] w-[5px] rotate-45"
-          style={{ backgroundColor: accent }}
-        />
+        <span className="block h-[5px] w-[5px] rotate-45" style={{ backgroundColor: accent }} />
         <span
           className="block h-[9px] w-[9px] rotate-45"
           style={{ border: "1px solid " + primary, backgroundColor: gxAlpha(accent, 0.55) }}
         />
-        <span
-          className="block h-[5px] w-[5px] rotate-45"
-          style={{ backgroundColor: accent }}
-        />
+        <span className="block h-[5px] w-[5px] rotate-45" style={{ backgroundColor: accent }} />
       </span>
       <span className="flex-1">
         <span className="block h-px" style={{ backgroundColor: gxAlpha(primary, 0.85) }} />
@@ -370,8 +367,8 @@ export default function Screen() {
                         Account created
                       </p>
                       <p className="mt-2 text-[13.5px] leading-6" style={ink}>
-                        {trimmedEmail} is signed in. No verification needed — opening the
-                        idea board.
+                        {trimmedEmail} is signed in. No verification needed — opening the idea
+                        board.
                       </p>
                     </div>
                   </div>
@@ -379,10 +376,7 @@ export default function Screen() {
                     className="mt-4 h-px w-full"
                     style={{ backgroundColor: gxAlpha(primary, 0.2) }}
                   >
-                    <div
-                      className="gx-sweep h-px w-full"
-                      style={{ backgroundColor: primary }}
-                    />
+                    <div className="gx-sweep h-px w-full" style={{ backgroundColor: primary }} />
                   </div>
                 </div>
               ) : null}
@@ -492,10 +486,7 @@ export default function Screen() {
                     </Requirement>
                   </ul>
                   {showErrors && errors.password ? (
-                    <p
-                      className="mt-2 flex items-start gap-2 text-[12.5px] leading-5"
-                      style={ink}
-                    >
+                    <p className="mt-2 flex items-start gap-2 text-[12.5px] leading-5" style={ink}>
                       <AlertCircle className="mt-[2px] h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                       <span>{errors.password}</span>
                     </p>
@@ -537,8 +528,8 @@ export default function Screen() {
                       {showErrors && errors.confirm
                         ? errors.confirm
                         : matches
-                        ? "Both entries match."
-                        : "Type it a second time so a typo can't lock you out."}
+                          ? "Both entries match."
+                          : "Type it a second time so a typo can't lock you out."}
                     </span>
                   </p>
                 </div>
@@ -593,8 +584,7 @@ export default function Screen() {
                     )}
                   </Button>
                   <p className="mt-4 text-center text-[12px] leading-5" style={muted}>
-                    Free to join. Your password is stored hashed — we never keep the
-                    original.
+                    Free to join. Your password is stored hashed — we never keep the original.
                   </p>
                 </div>
               </form>

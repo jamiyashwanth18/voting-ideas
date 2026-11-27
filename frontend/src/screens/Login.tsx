@@ -27,7 +27,13 @@ const KNOWN_ACCOUNTS = [
 
 const tint = (hex, alpha) => {
   const h = String(hex).replace("#", "");
-  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  const full =
+    h.length === 3
+      ? h
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : h;
   const n = parseInt(full, 16);
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
 };
@@ -58,9 +64,7 @@ export default function Screen() {
     borderRadius: 0,
     height: "48px",
     backgroundColor: "rgba(255,255,255,0.78)",
-    border: `1px solid ${
-      invalid ? ink : focused === name ? gold : tint(ink, 0.3)
-    }`,
+    border: `1px solid ${invalid ? ink : focused === name ? gold : tint(ink, 0.3)}`,
     boxShadow: focused === name ? `inset 0 -2px 0 0 ${gold}` : "none",
     color: ink,
     fontFamily: brand.fontBody,
@@ -97,9 +101,7 @@ export default function Screen() {
 
     timers.current.push(
       setTimeout(() => {
-        const match = KNOWN_ACCOUNTS.find(
-          (a) => a.email.toLowerCase() === trimmed.toLowerCase()
-        );
+        const match = KNOWN_ACCOUNTS.find((a) => a.email.toLowerCase() === trimmed.toLowerCase());
         if (match && password.length >= 8) {
           setGreeting(match.name.split(" ")[0]);
           setStatus("success");
@@ -107,32 +109,20 @@ export default function Screen() {
         } else {
           setStatus("error");
           setFormError(
-            "Those details do not match an account. Check the email and password, then try again."
+            "Those details do not match an account. Check the email and password, then try again.",
           );
         }
-      }, 850)
+      }, 850),
     );
   };
 
   const Rule = ({ className = "" }) => (
-    <div
-      className={"flex items-center justify-center gap-3 " + className}
-      aria-hidden="true"
-    >
+    <div className={"flex items-center justify-center gap-3 " + className} aria-hidden="true">
       <span className="h-px flex-1" style={{ backgroundColor: hairline }} />
       <span className="flex items-center gap-1.5">
-        <span
-          className="block h-1.5 w-1.5 rotate-45"
-          style={{ backgroundColor: gold }}
-        />
-        <span
-          className="block h-2.5 w-2.5 rotate-45"
-          style={{ border: `1px solid ${ink}` }}
-        />
-        <span
-          className="block h-1.5 w-1.5 rotate-45"
-          style={{ backgroundColor: gold }}
-        />
+        <span className="block h-1.5 w-1.5 rotate-45" style={{ backgroundColor: gold }} />
+        <span className="block h-2.5 w-2.5 rotate-45" style={{ border: `1px solid ${ink}` }} />
+        <span className="block h-1.5 w-1.5 rotate-45" style={{ backgroundColor: gold }} />
       </span>
       <span className="h-px flex-1" style={{ backgroundColor: hairline }} />
     </div>
@@ -178,10 +168,7 @@ export default function Screen() {
         </p>
 
         {/* Double frame: outer rule in brand primary, inner rule in accent gold */}
-        <div
-          className="relative p-[6px]"
-          style={{ border: `1px solid ${ink}`, borderRadius: 0 }}
-        >
+        <div className="relative p-[6px]" style={{ border: `1px solid ${ink}`, borderRadius: 0 }}>
           <div
             className="relative px-6 py-9 sm:px-10 sm:py-11"
             style={{
@@ -212,20 +199,15 @@ export default function Screen() {
                 className="mx-auto mt-3 max-w-[38ch] text-[13.5px] leading-6"
                 style={{ color: muted }}
               >
-                Members may post ideas and cast one upvote apiece. Browsing the
-                board needs no account at all.
+                Members may post ideas and cast one upvote apiece. Browsing the board needs no
+                account at all.
               </p>
             </header>
 
             <Rule className="mt-7" />
 
             {/* b-1-0 — credentials form */}
-            <form
-              data-wf="b-1-0"
-              onSubmit={onSubmit}
-              noValidate
-              className="mt-7"
-            >
+            <form data-wf="b-1-0" onSubmit={onSubmit} noValidate className="mt-7">
               {showExpired && status === "idle" && (
                 <div
                   className="gb-rise mb-7 flex items-start gap-3 px-4 py-3"
@@ -254,8 +236,7 @@ export default function Screen() {
                     <span style={{ fontVariantNumeric: "tabular-nums" }}>
                       {SESSION_IDLE_MINUTES}
                     </span>{" "}
-                    minutes idle we closed your session. Log in to carry on
-                    where you left off.
+                    minutes idle we closed your session. Log in to carry on where you left off.
                   </p>
                 </div>
               )}
@@ -286,10 +267,7 @@ export default function Screen() {
                     >
                       Sign-in refused
                     </p>
-                    <p
-                      className="mt-1 text-[13px] leading-6"
-                      style={{ color: ink }}
-                    >
+                    <p className="mt-1 text-[13px] leading-6" style={{ color: ink }}>
                       {formError}
                     </p>
                   </div>
@@ -311,8 +289,7 @@ export default function Screen() {
                     aria-hidden="true"
                   />
                   <p className="text-[13px] leading-6" style={{ color: ink }}>
-                    Welcome back{greeting ? `, ${greeting}` : ""}. Opening the
-                    board…
+                    Welcome back{greeting ? `, ${greeting}` : ""}. Opening the board…
                   </p>
                 </div>
               )}
@@ -345,13 +322,10 @@ export default function Screen() {
                     onBlur={() => setFocused(null)}
                     onChange={(e) => {
                       setEmail(e.target.value);
-                      if (fieldErrors.email)
-                        setFieldErrors((p) => ({ ...p, email: undefined }));
+                      if (fieldErrors.email) setFieldErrors((p) => ({ ...p, email: undefined }));
                     }}
                     aria-invalid={fieldErrors.email ? "true" : "false"}
-                    aria-describedby={
-                      fieldErrors.email ? "login-email-error" : "login-email-hint"
-                    }
+                    aria-describedby={fieldErrors.email ? "login-email-error" : "login-email-hint"}
                     className="w-full px-3 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                     style={{ ...fieldStyle("email", !!fieldErrors.email), outlineColor: ink }}
                   />
@@ -408,9 +382,7 @@ export default function Screen() {
                         setFieldErrors((p) => ({ ...p, password: undefined }));
                     }}
                     aria-invalid={fieldErrors.password ? "true" : "false"}
-                    aria-describedby={
-                      fieldErrors.password ? "login-password-error" : undefined
-                    }
+                    aria-describedby={fieldErrors.password ? "login-password-error" : undefined}
                     className="w-full px-3 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                     style={{
                       ...fieldStyle("password", !!fieldErrors.password),
@@ -494,26 +466,17 @@ export default function Screen() {
               >
                 No account yet? Create one
               </button>
-              <p
-                className="mt-3 text-[12px] leading-5"
-                style={{ color: muted }}
-              >
-                Registration takes an email and a password — no verification
-                message to wait for.
+              <p className="mt-3 text-[12px] leading-5" style={{ color: muted }}>
+                Registration takes an email and a password — no verification message to wait for.
               </p>
             </div>
           </div>
         </div>
 
-        <p
-          className="mt-6 text-center text-[11.5px] leading-5"
-          style={{ color: muted }}
-        >
+        <p className="mt-6 text-center text-[11.5px] leading-5" style={{ color: muted }}>
           Sessions close after{" "}
-          <span style={{ fontVariantNumeric: "tabular-nums" }}>
-            {SESSION_IDLE_MINUTES}
-          </span>{" "}
-          minutes of inactivity.
+          <span style={{ fontVariantNumeric: "tabular-nums" }}>{SESSION_IDLE_MINUTES}</span> minutes
+          of inactivity.
         </p>
       </div>
     </div>
