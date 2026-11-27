@@ -37,7 +37,17 @@ USER_ROLE = "user"
 # How long a session survives without activity (AC-012, NFR-002). No work item sets a
 # number, so this is a sane default a deployment can override without a code change.
 SESSION_INACTIVITY_MINUTES = int(os.getenv("SESSION_INACTIVITY_MINUTES", "30"))
-SESSION_INACTIVITY_PERIOD = timedelta(minutes=SESSION_INACTIVITY_MINUTES)
+# A deployment states its expiry in whole minutes (SESSION_INACTIVITY_MINUTES above), but
+# a test needs an expiry short enough to wait past in real time without the suite
+# crawling -- "2 seconds", not "1 minute". SESSION_INACTIVITY_SECONDS lets the test
+# environment configure exactly that, down to fractional seconds; a deployment never
+# sets it, so SESSION_INACTIVITY_MINUTES alone still governs production.
+_inactivity_seconds = os.getenv("SESSION_INACTIVITY_SECONDS")
+SESSION_INACTIVITY_PERIOD = (
+    timedelta(seconds=float(_inactivity_seconds))
+    if _inactivity_seconds
+    else timedelta(minutes=SESSION_INACTIVITY_MINUTES)
+)
 
 _bearer = HTTPBearer(auto_error=False)
 # The users table may come from the approved data model, so its key is read, not assumed:
@@ -106,6 +116,10 @@ def authenticate(session: Session, email: str, password: str) -> User | None:
     """
     user = find_user(session, email.strip())
     if user is None or not verify_password(password, user.password_hash or ""):
+        return None
+    if not user.is_active:
+        # A deactivated account is refused the same generic way as any other wrong
+        # credential (AC-010, NFR-004): it reveals nothing about why.
         return None
     return user
 

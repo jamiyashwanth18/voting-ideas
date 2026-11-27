@@ -97,14 +97,17 @@ def me(user: Annotated[User, Depends(current_user)]) -> CurrentUser:
 
 @router.post(
     "/logout",
-    status_code=204,
     responses={SESSION_EXPIRED.status: {"description": SESSION_EXPIRED.message}},
 )
 def logout(
     user: Annotated[User, Depends(current_user)],
     token: Annotated[str, Depends(current_token)],
     session: Annotated[Session, Depends(get_db)],
-) -> None:
-    """Revokes the current session token server-side (AC-013, NFR-003)."""
+) -> dict[str, str]:
+    """Revokes the current session token server-side (AC-013, NFR-003), confirming it
+    in the 200 response the case calls for (TC-001, TC-002): the session is gone, not
+    merely acknowledged with no body.
+    """
     revoke_session(session, token)
     session.commit()
+    return {"detail": "Session revoked."}
