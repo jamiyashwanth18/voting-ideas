@@ -2,6 +2,298 @@
 openapi: 3.1.0
 info:
   title: Voting ideas
-  version: architecture-v0
+  version: architecture-v1
   description: Designed API from the approved architecture (not extracted from code).
-paths: {}
+paths:
+  /admin/ideas:
+    get:
+      summary: Admin-only list of all ideas regardless of author for moderation.
+      description: Admin-only list of all ideas regardless of author for moderation.
+      operationId: get_admin_ideas
+      parameters: []
+      responses:
+        '200':
+          description: 200 [ { id, title, author_id, vote_count } ] | 403 not admin
+      security:
+      - bearerAuth: []
+  /admin/users/{id}/deactivate:
+    post:
+      summary: Admin-only deactivation; user can no longer log in and existing sessions
+        are ended.
+      description: Admin-only deactivation; user can no longer log in and existing
+        sessions are ended.
+      operationId: post_admin_users_id_deactivate
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: (none)
+      responses:
+        '200':
+          description: 204 | 403 not admin
+      security:
+      - bearerAuth: []
+  /auth/login:
+    post:
+      summary: Verify credentials for an active account and start a session; returns
+        an opaque token in the body.
+      description: Verify credentials for an active account and start a session; returns
+        an opaque token in the body.
+      operationId: post_auth_login
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{ email, password }'
+      responses:
+        '200':
+          description: '200 { token, user: { id, email, is_admin } } | 401 generic
+            failure'
+  /auth/logout:
+    post:
+      summary: Revoke the current session token server-side.
+      description: Revoke the current session token server-side.
+      operationId: post_auth_logout
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: (empty)
+      responses:
+        '200':
+          description: '204'
+      security:
+      - bearerAuth: []
+  /auth/me:
+    get:
+      summary: Return the current user for the token, or 401 if expired/revoked.
+      description: Return the current user for the token, or 401 if expired/revoked.
+      operationId: get_auth_me
+      parameters: []
+      responses:
+        '200':
+          description: 200 { id, email, is_admin } | 401
+      security:
+      - bearerAuth: []
+  /auth/register:
+    post:
+      summary: Create an account with a valid, unused email and a rules-compliant
+        password; password stored as a bcrypt hash; account u
+      description: Create an account with a valid, unused email and a rules-compliant
+        password; password stored as a bcrypt hash; account usable immediately.
+      operationId: post_auth_register
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{ email, password }'
+      responses:
+        '200':
+          description: 201 { id, email } | 409 email already registered | 422 validation
+            error
+  /ideas:
+    get:
+      summary: Public list of all ideas ranked by upvote count desc with deterministic
+        tie-break; empty list when none exist.
+      description: Public list of all ideas ranked by upvote count desc with deterministic
+        tie-break; empty list when none exist.
+      operationId: get_ideas
+      parameters: []
+      responses:
+        '200':
+          description: 200 [ { id, title, description, author_id, vote_count, voted_by_me
+            } ]
+      security:
+      - bearerAuth: []
+    post:
+      summary: Create an idea with non-empty title and description within length limits;
+        attributed to the caller, starts at zero votes
+      description: Create an idea with non-empty title and description within length
+        limits; attributed to the caller, starts at zero votes.
+      operationId: post_ideas
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{ title, description }'
+      responses:
+        '200':
+          description: 201 { id, title, description, vote_count } | 401 | 422 validation
+            error
+      security:
+      - bearerAuth: []
+  /ideas/{id}:
+    patch:
+      summary: Edit own idea's title/description; refused if not the author.
+      description: Edit own idea's title/description; refused if not the author.
+      operationId: patch_ideas_id
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{ title, description }'
+      responses:
+        '200':
+          description: 200 { id, title, description } | 401 | 403 not author | 422
+      security:
+      - bearerAuth: []
+    delete:
+      summary: Delete own idea (or any idea if admin); cascades its votes.
+      description: Delete own idea (or any idea if admin); cascades its votes.
+      operationId: delete_ideas_id
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 204 | 401 | 403 not author/admin
+      security:
+      - bearerAuth: []
+  /ideas/{id}/vote:
+    post:
+      summary: Toggle the caller's upvote on an idea; idempotent per user via unique
+        constraint.
+      description: Toggle the caller's upvote on an idea; idempotent per user via
+        unique constraint.
+      operationId: post_ideas_id_vote
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: (none)
+      responses:
+        '200':
+          description: 200 { idea_id, voted, vote_count } | 401 | 404
+      security:
+      - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    users:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        password_hash:
+          type: string
+        is_admin:
+          type: boolean
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - email
+      - password_hash
+      - is_admin
+      - is_active
+      - created_at
+    ideas:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        author_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - author_id
+      - title
+      - description
+      - created_at
+      - updated_at
+    votes:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        idea_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - user_id
+      - idea_id
+      - created_at
+    sessions:
+      type: object
+      properties:
+        token:
+          type: string
+        user_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        last_active_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+      required:
+      - token
+      - user_id
+      - created_at
+      - last_active_at
+      - expires_at
