@@ -5,7 +5,7 @@
 <!-- sdlc:auto:start overview -->
 Build a small Idea Voting Board with sign up. Features 1. Sign up with email and password. Log in and log out. 2. Post an idea (title, short description). Logged-in users only. 3. List ideas by votes, highest first. Anyone can view. 4. Upvote an idea. One vote per user per idea.
 
-**Documentation version:** v4
+**Documentation version:** v5
 <!-- sdlc:auto:end overview -->
 
 ## Contents
@@ -30,7 +30,7 @@ Build a small Idea Voting Board with sign up. Features 1. Sign up with email and
 | [Tests](testing/test-cases.md) | 0 tests |
 | [Deployment guide](deployment/deployment-guide.md) | deployed |
 | [Runbook](deployment/runbook.md) | deployed |
-| [Release notes](deployment/release-notes.md) | 1 release |
+| [Release notes](deployment/release-notes.md) | 2 releases |
 | [Traceability matrix](traceability-matrix.md) | 13 requirements |
-| [Changelog](CHANGELOG.md) | 4 versions |
+| [Changelog](CHANGELOG.md) | 5 versions |
 <!-- sdlc:auto:end contents -->
