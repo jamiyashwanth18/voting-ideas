@@ -3,7 +3,11 @@
 > Maintained by QuorQ AI SDLC. Text between `sdlc:auto` markers is regenerated; anything outside them is yours and is kept.
 
 <!-- sdlc:auto:start endpoints -->
-_No routes found._
+| Method | Path | Handler | Source | Summary |
+|---|---|---|---|---|
+| POST | /auth/login | login | `backend/app/auth.py:130` | — |
+| GET | /auth/me | me | `backend/app/auth.py:138` | — |
+| GET | /health | health | `backend/app/main.py:87` | Liveness probe, and the only route here that is not a stub. |
 <!-- sdlc:auto:end endpoints -->
 
 <!-- sdlc:auto:start drift -->
@@ -11,11 +15,9 @@ _No routes found._
 
 - DELETE /ideas/{id}
 - GET /admin/ideas
-- GET /auth/me
 - GET /ideas
 - PATCH /ideas/{id}
 - POST /admin/users/{id}/deactivate
-- POST /auth/login
 - POST /auth/logout
 - POST /auth/register
 - POST /ideas
@@ -23,5 +25,5 @@ _No routes found._
 <!-- sdlc:auto:end drift -->
 
 <!-- sdlc:auto:start source -->
-_Not generated yet._
+Generated from commit `6b9f1b7`
 <!-- sdlc:auto:end source -->
