@@ -6,73 +6,6 @@
     "version": "0.1.0"
   },
   "paths": {
-    "/auth/login": {
-      "post": {
-        "tags": [
-          "Auth"
-        ],
-        "summary": "Login",
-        "operationId": "login_auth_login_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LoginRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LoginResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/auth/me": {
-      "get": {
-        "tags": [
-          "Auth"
-        ],
-        "summary": "Me",
-        "operationId": "me_auth_me_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CurrentUser"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      }
-    },
     "/auth/register": {
       "post": {
         "tags": [
@@ -115,6 +48,81 @@
             }
           }
         }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Login",
+        "description": "Verifies the credentials and starts a session (AC-010); a wrong password or an\nunknown email is refused the same generic way, and no session is started\n(AC-011, NFR-005).",
+        "operationId": "login_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Incorrect email or password."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Me",
+        "description": "The signed-in user for a still-active session token (AC-012, NFR-002).",
+        "operationId": "me_auth_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUser"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Your session has expired. Please log in again."
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/ideas": {
@@ -189,7 +197,8 @@
           "email",
           "role"
         ],
-        "title": "CurrentUser"
+        "title": "CurrentUser",
+        "description": "GET /auth/me reply: the signed-in user for a still-valid session token."
       },
       "HTTPValidationError": {
         "properties": {
@@ -249,7 +258,8 @@
           "email",
           "password"
         ],
-        "title": "LoginRequest"
+        "title": "LoginRequest",
+        "description": "POST /auth/login body: the email and password for an existing account (AC-010).\n\nBoth fields stay plain strings, not a stricter type: an unknown or malformed email\nmust fail the same generic way as a wrong password (AC-011, NFR-005), never as a\ndistinct validation error that names the email as the problem."
       },
       "LoginResponse": {
         "properties": {
@@ -262,7 +272,8 @@
         "required": [
           "token"
         ],
-        "title": "LoginResponse"
+        "title": "LoginResponse",
+        "description": "POST /auth/login reply: the opaque session token (AC-010); never a password or hash."
       },
       "RegisterRequest": {
         "properties": {

@@ -17,6 +17,26 @@ class User(Base):
     role: Mapped[str] = mapped_column(String(50), nullable=False)
 
 
+class UserSession(Base):
+    """One login that is still, or was, active (US-004): the table behind `sessions`.
+
+    The bearer token itself is never stored, only a one-way digest of it (app/auth.py),
+    so a copy of this table leaked on its own cannot be replayed as a session. A session
+    past its `expires_at` is treated as gone (AC-012, NFR-002): every verified request
+    pushes `expires_at` forward again, so only inactivity -- never mere age -- ends one.
+    """
+
+    __tablename__ = "sessions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, nullable=False)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
 class Idea(Base):
     """One idea on the public board (US-001)."""
 

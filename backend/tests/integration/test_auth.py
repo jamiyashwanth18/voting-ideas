@@ -5,6 +5,7 @@ explains a failure in every test that uses it.
 """
 
 import secrets
+import time
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
@@ -159,3 +160,105 @@ def test_tc030_new_account_is_usable_immediately_with_no_verification_step(
 
     assert me_response.status_code == 200
     assert me_response.json()["email"] == email
+
+
+def test_tc012_successful_login_with_correct_credentials(client: TestClient) -> None:
+    """AC-010: a registered, active account logs in and receives an opaque session
+    token."""
+    email = "alice@example.com"
+    password = "Str0ngP@ss1"
+
+    register_response = client.post("/auth/register", json={"email": email, "password": password})
+
+    assert register_response.status_code == 201
+
+    login_response = client.post("/auth/login", json={"email": email, "password": password})
+
+    assert login_response.status_code == 200
+    assert login_response.json()["token"]
+
+
+def test_tc014_login_refused_for_a_deactivated_account(
+    client: TestClient, admin_client: TestClient
+) -> None:
+    """AC-010: a deactivated account cannot log in even with the correct password,
+    and no session token is returned.
+
+    The admin in the approved case (admin@example.com / AdminP@ss1) is replaced here
+    by the kit's `admin_client` fixture, which signs in as a freshly made admin through
+    the app itself: the kit never lets a test hard-code another account's credentials.
+    """
+    email = "bob@example.com"
+    password = "Str0ngP@ss1"
+
+    register_response = client.post("/auth/register", json={"email": email, "password": password})
+
+    assert register_response.status_code == 201
+    bob_id = register_response.json()["id"]
+
+    deactivate_response = admin_client.post(f"/admin/users/{bob_id}/deactivate")
+
+    assert deactivate_response.status_code == 200
+
+    login_response = client.post("/auth/login", json={"email": email, "password": password})
+
+    assert login_response.status_code != 200
+    assert "token" not in login_response.json()
+
+
+def test_tc016_login_refused_with_wrong_password(client: TestClient) -> None:
+    """AC-011, NFR-005: the correct email with the wrong password is refused with the
+    contract's generic message, and no session token is returned."""
+    email = "dave@example.com"
+
+    register_response = client.post(
+        "/auth/register", json={"email": email, "password": "Str0ngP@ss1"}
+    )
+
+    assert register_response.status_code == 201
+
+    login_response = client.post("/auth/login", json={"email": email, "password": "WrongPass1!"})
+
+    assert login_response.status_code == 401
+    body = login_response.json()
+    assert "token" not in body
+    assert body.get("detail") == "Incorrect email or password."
+
+
+def test_tc017_login_refused_with_unknown_email(client: TestClient) -> None:
+    """AC-011, NFR-005: an unregistered email is refused with the same generic
+    message as a wrong password, and no session token is returned."""
+    login_response = client.post(
+        "/auth/login", json={"email": "ghost@example.com", "password": "AnyPass1!"}
+    )
+
+    assert login_response.status_code == 401
+    body = login_response.json()
+    assert "token" not in body
+    assert body.get("detail") == "Incorrect email or password."
+
+
+def test_tc020_expired_session_rejected_on_a_protected_call(client: TestClient) -> None:
+    """AC-012, NFR-002: a session left inactive beyond the configured expiry period
+    is rejected on the next call that needs login, and no user data is returned.
+
+    The test environment is preconditioned to a 2 second inactivity expiry; this test
+    only waits past it and reuses the token, as the case's steps say.
+    """
+    email = "frank@example.com"
+    password = "Str0ngP@ss1"
+
+    register_response = client.post("/auth/register", json={"email": email, "password": password})
+
+    assert register_response.status_code == 201
+
+    login_response = client.post("/auth/login", json={"email": email, "password": password})
+
+    assert login_response.status_code == 200
+    token = login_response.json()["token"]
+
+    time.sleep(3)
+
+    me_response = client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
+
+    assert me_response.status_code == 401

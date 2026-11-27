@@ -59,3 +59,29 @@ class RegisterResponse(ApiModel):
 
     id: str
     email: str
+
+
+class LoginRequest(ApiModel):
+    """POST /auth/login body: the email and password for an existing account (AC-010).
+
+    Both fields stay plain strings, not a stricter type: an unknown or malformed email
+    must fail the same generic way as a wrong password (AC-011, NFR-005), never as a
+    distinct validation error that names the email as the problem.
+    """
+
+    email: str
+    password: str
+
+
+class LoginResponse(ApiModel):
+    """POST /auth/login reply: the opaque session token (AC-010); never a password or hash."""
+
+    token: str
+
+
+class CurrentUser(ApiModel):
+    """GET /auth/me reply: the signed-in user for a still-valid session token."""
+
+    id: str
+    email: str
+    role: str
