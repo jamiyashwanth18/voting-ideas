@@ -143,6 +143,38 @@ export interface paths {
         patch: operations["update_idea_ideas__id__patch"];
         trace?: never;
     };
+    "/ideas/{id}/vote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Vote Idea
+         * @description Records the signed-in caller's upvote on this idea, at most once (AC-022). A
+         *     caller who has already upvoted this idea gets the same reply back, with no second
+         *     vote recorded and the count unchanged (AC-023). An id that matches no idea is
+         *     refused as IDEA_NOT_FOUND. A caller with no valid session is refused the same
+         *     SESSION_EXPIRED way as any other action that needs login (AC-024).
+         *
+         *     Whether this caller has already voted is never trusted from a prior read-then-
+         *     decide in this process: two of this caller's requests racing each other could both
+         *     read "not yet voted" before either writes. The insert is attempted every time and
+         *     the table's own unique constraint on (idea_id, user_id) -- not a check here -- is
+         *     what actually stops a second row from ever existing, even under that race
+         *     (NFR-008); this handler only needs to recognise that constraint being hit and treat
+         *     it the same as having found the vote already there.
+         */
+        post: operations["vote_idea_ideas__id__vote_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -286,6 +318,19 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /**
+         * VoteResponse
+         * @description POST /ideas/{id}/vote reply: the idea's upvote count and whether the signed-in
+         *     caller has now upvoted it (AC-022, AC-023), after this call. A caller who had
+         *     already upvoted this idea gets this same shape back, with no change made: the
+         *     count does not grow again, and `voted` stays true (AC-023, NFR-008).
+         */
+        VoteResponse: {
+            /** Votecount */
+            voteCount: number;
+            /** Voted */
+            voted: boolean;
         };
     };
     responses: never;
@@ -575,6 +620,51 @@ export interface operations {
             };
             /** @description Only the author can edit this idea. */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Idea not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    vote_idea_ideas__id__vote_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoteResponse"];
+                };
+            };
+            /** @description Your session has expired. Please log in again. */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

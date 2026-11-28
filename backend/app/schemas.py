@@ -71,6 +71,17 @@ class IdeaCreate(ApiModel):
     description: str = Field(min_length=1, max_length=2000)
 
 
+class VoteResponse(ApiModel):
+    """POST /ideas/{id}/vote reply: the idea's upvote count and whether the signed-in
+    caller has now upvoted it (AC-022, AC-023), after this call. A caller who had
+    already upvoted this idea gets this same shape back, with no change made: the
+    count does not grow again, and `voted` stays true (AC-023, NFR-008).
+    """
+
+    vote_count: int
+    voted: bool
+
+
 class RegisterRequest(ApiModel):
     """POST /auth/register body: the email and password a visitor chooses (AC-006).
 

@@ -23,7 +23,7 @@ function AppShellLayout() {
   // require login without logging in again.
   async function handleLogout() {
     try {
-      await api.POST("/auth/logout");
+      await api.POST("/auth/logout", {});
     } catch {
       // The session is still cleared locally below: a failed call to the server
       // must not leave the user looking logged in on their own device.

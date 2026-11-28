@@ -14,13 +14,14 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth import ADMIN_ROLE, current_user
 from app.database import get_db
 from app.errors import IDEA_NOT_AUTHOR, IDEA_NOT_AUTHOR_DELETE, IDEA_NOT_FOUND, SESSION_EXPIRED
 from app.models import Idea, User, Vote
-from app.schemas import IdeaCreate, IdeaRead, IdeaUpdate
+from app.schemas import IdeaCreate, IdeaRead, IdeaUpdate, VoteResponse
 
 router = APIRouter(tags=["Ideas"])
 
@@ -136,3 +137,45 @@ def delete_idea(
     session.query(Vote).filter(Vote.idea_id == idea.id).delete()
     session.delete(idea)
     session.commit()
+
+
+@router.post(
+    "/ideas/{id}/vote",
+    responses={
+        SESSION_EXPIRED.status: {"description": SESSION_EXPIRED.message},
+        IDEA_NOT_FOUND.status: {"description": IDEA_NOT_FOUND.message},
+    },
+)
+def vote_idea(
+    id: str,
+    user: Annotated[User, Depends(current_user)],
+    session: Annotated[Session, Depends(get_db)],
+) -> VoteResponse:
+    """Records the signed-in caller's upvote on this idea, at most once (AC-022). A
+    caller who has already upvoted this idea gets the same reply back, with no second
+    vote recorded and the count unchanged (AC-023). An id that matches no idea is
+    refused as IDEA_NOT_FOUND. A caller with no valid session is refused the same
+    SESSION_EXPIRED way as any other action that needs login (AC-024).
+
+    Whether this caller has already voted is never trusted from a prior read-then-
+    decide in this process: two of this caller's requests racing each other could both
+    read "not yet voted" before either writes. The insert is attempted every time and
+    the table's own unique constraint on (idea_id, user_id) -- not a check here -- is
+    what actually stops a second row from ever existing, even under that race
+    (NFR-008); this handler only needs to recognise that constraint being hit and treat
+    it the same as having found the vote already there.
+    """
+    idea = session.get(Idea, id)
+    if idea is None:
+        raise HTTPException(IDEA_NOT_FOUND.status, IDEA_NOT_FOUND.message)
+    savepoint = session.begin_nested()
+    try:
+        session.add(Vote(id=str(uuid4()), idea_id=id, user_id=user.id))
+        savepoint.commit()
+    except IntegrityError:
+        # Already voted, cast here or by a concurrent request that won the race:
+        # either way, no second vote (AC-023, NFR-008).
+        savepoint.rollback()
+    session.commit()
+    vote_count = session.scalar(select(func.count(Vote.id)).where(Vote.idea_id == id)) or 0
+    return VoteResponse(vote_count=vote_count, voted=True)

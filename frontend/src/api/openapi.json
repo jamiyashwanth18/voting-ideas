@@ -347,6 +347,60 @@
         }
       }
     },
+    "/ideas/{id}/vote": {
+      "post": {
+        "tags": [
+          "Ideas"
+        ],
+        "summary": "Vote Idea",
+        "description": "Records the signed-in caller's upvote on this idea, at most once (AC-022). A\ncaller who has already upvoted this idea gets the same reply back, with no second\nvote recorded and the count unchanged (AC-023). An id that matches no idea is\nrefused as IDEA_NOT_FOUND. A caller with no valid session is refused the same\nSESSION_EXPIRED way as any other action that needs login (AC-024).\n\nWhether this caller has already voted is never trusted from a prior read-then-\ndecide in this process: two of this caller's requests racing each other could both\nread \"not yet voted\" before either writes. The insert is attempted every time and\nthe table's own unique constraint on (idea_id, user_id) -- not a check here -- is\nwhat actually stops a second row from ever existing, even under that race\n(NFR-008); this handler only needs to recognise that constraint being hit and treat\nit the same as having found the vote already there.",
+        "operationId": "vote_idea_ideas__id__vote_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoteResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Your session has expired. Please log in again."
+          },
+          "404": {
+            "description": "Idea not found."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -591,6 +645,25 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "VoteResponse": {
+        "properties": {
+          "voteCount": {
+            "type": "integer",
+            "title": "Votecount"
+          },
+          "voted": {
+            "type": "boolean",
+            "title": "Voted"
+          }
+        },
+        "type": "object",
+        "required": [
+          "voteCount",
+          "voted"
+        ],
+        "title": "VoteResponse",
+        "description": "POST /ideas/{id}/vote reply: the idea's upvote count and whether the signed-in\ncaller has now upvoted it (AC-022, AC-023), after this call. A caller who had\nalready upvoted this idea gets this same shape back, with no change made: the\ncount does not grow again, and `voted` stays true (AC-023, NFR-008)."
       }
     },
     "securitySchemes": {

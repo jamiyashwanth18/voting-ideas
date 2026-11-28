@@ -24,6 +24,8 @@ const DESCRIPTION_MAX = 2000;
 const MSG_NOT_AUTHOR_EDIT = "Only the author can edit this idea";
 const MSG_NOT_AUTHOR_DELETE = "Only the author can delete this idea";
 const MSG_IDEA_DELETED = "Idea deleted";
+const MSG_LOGIN_TO_POST = "Log in or register to post an idea";
+const MSG_LOGIN_TO_VOTE = "Log in or register to upvote";
 
 // A readable, deterministic id for a dynamic element: lower-cased words joined
 // by single hyphens, kept to at most 40 characters including the suffix that
@@ -140,8 +142,8 @@ export default function Screen() {
     </div>
   );
 
-  const askToLogIn = () => {
-    setGuestNotice("Log in or register to post an idea");
+  const askToLogIn = (message = MSG_LOGIN_TO_POST) => {
+    setGuestNotice(message);
   };
 
   const handlePostIdeaClick = () => {
@@ -282,7 +284,11 @@ export default function Screen() {
   const handleUpvote = async (idea) => {
     if (!loggedIn) {
       // AC-024: a visitor who is not logged in is refused and prompted instead.
-      askToLogIn();
+      askToLogIn(MSG_LOGIN_TO_VOTE);
+      return;
+    }
+    if (votedIds.has(idea.id)) {
+      // AC-023: already upvoted; the button is disabled for this, but guard anyway.
       return;
     }
     try {
@@ -459,6 +465,8 @@ export default function Screen() {
                       type="button"
                       data-testid={upvoteTestId}
                       onClick={() => handleUpvote(idea)}
+                      disabled={alreadyVoted}
+                      aria-pressed={alreadyVoted}
                       className="px-3 py-1.5 text-[10px]"
                       style={alreadyVoted ? primaryBtn : quietBtn}
                     >

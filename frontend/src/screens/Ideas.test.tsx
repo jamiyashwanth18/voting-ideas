@@ -433,6 +433,67 @@ describe("Idea Board", () => {
     expect(within(list).getByText("Dark mode")).toBeInTheDocument();
   });
 
+  it("[AC-022] upvoting a not-yet-upvoted idea increases its count and marks it upvoted", async () => {
+    setSessionToken("session-token-1");
+    api.GET.mockResolvedValue({
+      data: [{ id: "idea-1", title: "Dark mode", description: "A dark theme", upvoteCount: 5 }],
+      error: undefined,
+    });
+    api.POST.mockResolvedValue({
+      data: { voteCount: 6, voted: true },
+      error: undefined,
+    });
+    renderScreen();
+
+    await screen.findByTestId("all-ideas-list");
+    fireEvent.click(screen.getByTestId("upvoted-5-btn"));
+
+    await waitFor(() => expect(api.POST).toHaveBeenCalledWith("/ideas/idea-1/vote", { body: {} }));
+    const button = await screen.findByTestId("upvoted-6-btn");
+    expect(button).toHaveTextContent("Upvoted");
+    expect(button).toBeDisabled();
+  });
+
+  it("[AC-023] a user's own already-upvoted idea has a disabled button that records no further vote", async () => {
+    setSessionToken("session-token-1");
+    api.GET.mockResolvedValue({
+      data: [{ id: "idea-1", title: "Dark mode", description: "A dark theme", upvoteCount: 5 }],
+      error: undefined,
+    });
+    api.POST.mockResolvedValue({
+      data: { voteCount: 6, voted: true },
+      error: undefined,
+    });
+    renderScreen();
+
+    await screen.findByTestId("all-ideas-list");
+    fireEvent.click(screen.getByTestId("upvoted-5-btn"));
+    const button = await screen.findByTestId("upvoted-6-btn");
+    expect(button).toBeDisabled();
+
+    fireEvent.click(button);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // The count does not increase beyond the one upvote this user is entitled to.
+    expect(api.POST).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("upvoted-6-btn")).toHaveTextContent("Upvoted");
+  });
+
+  it("[AC-024] a visitor who is not logged in is refused and prompted to log in or register", async () => {
+    api.GET.mockResolvedValue({
+      data: [{ id: "idea-1", title: "Dark mode", description: "A dark theme", upvoteCount: 5 }],
+      error: undefined,
+    });
+    renderScreen();
+
+    await screen.findByTestId("all-ideas-list");
+    fireEvent.click(screen.getByTestId("upvoted-5-btn"));
+
+    expect(await screen.findByText("Log in or register to upvote")).toBeInTheDocument();
+    expect(api.POST).not.toHaveBeenCalled();
+    expect(screen.getByTestId("upvoted-5-btn")).toHaveTextContent("Upvote");
+  });
+
   it("[AC-021] a non-author's delete attempt is refused and the idea stays on the board", async () => {
     setSessionToken("session-token-1");
     api.GET.mockResolvedValue({
