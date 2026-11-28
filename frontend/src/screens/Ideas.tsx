@@ -47,6 +47,13 @@ function makeTestId(text, suffix) {
   return `${slug}${suffix}`;
 }
 
+// Worked examples of the deterministic scheme above, so the id a given card
+// or upvote button renders with is traceable without running the app:
+// makeTestId("Dark mode for the board posted by a board member", "-card")
+//   -> "dark-mode-for-the-board-posted-by-a-card"
+// makeTestId("Upvoted 42", "-btn")
+//   -> "upvoted-42-btn"
+
 export default function Screen() {
   const navigate = useNavigate();
   const caps = {

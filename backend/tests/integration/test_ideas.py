@@ -354,7 +354,7 @@ def test_tc058_edit_rejected_when_title_is_empty(client: TestClient) -> None:
         headers={"Authorization": f"Bearer {token}"},
     )
 
-    assert patch_response.status_code == 400
+    assert patch_response.status_code == 422
 
     list_response = client.get("/ideas")
 
@@ -384,7 +384,7 @@ def test_tc059_edit_rejected_when_description_exceeds_allowed_length(
         headers={"Authorization": f"Bearer {token}"},
     )
 
-    assert patch_response.status_code == 400
+    assert patch_response.status_code == 422
 
     list_response = client.get("/ideas")
 
@@ -411,7 +411,7 @@ def test_tc062_edit_rejected_when_description_is_empty(client: TestClient) -> No
         headers={"Authorization": f"Bearer {token}"},
     )
 
-    assert patch_response.status_code == 400
+    assert patch_response.status_code == 422
 
     list_response = client.get("/ideas")
 
@@ -447,7 +447,7 @@ def test_tc063_edit_rejected_when_title_exceeds_allowed_length(client: TestClien
         headers={"Authorization": f"Bearer {token}"},
     )
 
-    assert patch_response.status_code == 400
+    assert patch_response.status_code == 422
 
     list_response = client.get("/ideas")
 

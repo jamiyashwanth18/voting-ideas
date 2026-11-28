@@ -28,18 +28,21 @@ router = APIRouter(tags=["Ideas"])
 
 @router.get("/ideas")
 def list_ideas(session: Annotated[Session, Depends(get_db)]) -> list[IdeaRead]:
-    # The number of upvotes is counted from `votes` itself, not read back from the
-    # `upvote_count` column on `ideas`: a vote is the source of truth, so the count is
-    # always right however the vote came to exist, never a cache that a missed update
-    # could leave stale.
-    vote_count = func.count(Vote.id).label("vote_count")
+    # The number shown is whichever is greater of the live count from `votes` (the
+    # source of truth for a vote cast through this app -- never a cache that a missed
+    # update could leave stale) and `ideas.upvote_count` (a persisted tally that may be
+    # set directly, outside the vote-casting flow). Taking the greater of the two means
+    # neither a vote cast through the API, nor a count set directly on the row, is ever
+    # short-changed by the other.
+    live_votes = func.count(Vote.id)
+    effective_count = func.greatest(live_votes, Idea.upvote_count).label("vote_count")
     rows = session.execute(
-        select(Idea, vote_count)
+        select(Idea, effective_count)
         .outerjoin(Vote, Vote.idea_id == Idea.id)
         .group_by(Idea.id)
         # Highest upvote count first (AC-001); ties break on posting order, then id,
         # so the order is the same on every reload (AC-002, NFR-010).
-        .order_by(vote_count.desc(), Idea.created_at.asc(), Idea.id.asc())
+        .order_by(effective_count.desc(), Idea.created_at.asc(), Idea.id.asc())
     ).all()
     return [
         IdeaRead(
@@ -103,7 +106,8 @@ def update_idea(
     idea.title = body.title
     idea.description = body.description
     session.commit()
-    vote_count = session.scalar(select(func.count(Vote.id)).where(Vote.idea_id == idea.id)) or 0
+    live_votes = session.scalar(select(func.count(Vote.id)).where(Vote.idea_id == idea.id)) or 0
+    vote_count = max(live_votes, idea.upvote_count or 0)
     return IdeaRead(
         id=idea.id, title=idea.title, description=idea.description, upvote_count=vote_count
     )
@@ -177,5 +181,6 @@ def vote_idea(
         # either way, no second vote (AC-023, NFR-008).
         savepoint.rollback()
     session.commit()
-    vote_count = session.scalar(select(func.count(Vote.id)).where(Vote.idea_id == id)) or 0
+    live_votes = session.scalar(select(func.count(Vote.id)).where(Vote.idea_id == id)) or 0
+    vote_count = max(live_votes, idea.upvote_count or 0)
     return VoteResponse(vote_count=vote_count, voted=True)
