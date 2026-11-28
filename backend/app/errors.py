@@ -30,8 +30,14 @@ SESSION_EXPIRED = ErrorCode(
 )
 
 # PATCH /ideas/{id} (AC-018, NFR-006): the caller is signed in but did not author this
-# idea. The same refusal covers a later delete attempt by a non-author (NFR-006).
+# idea.
 IDEA_NOT_AUTHOR = ErrorCode(status.HTTP_403_FORBIDDEN, "Only the author can edit this idea.")
 
-# PATCH /ideas/{id}: the id in the path matches no idea.
+# DELETE /ideas/{id} (AC-021, NFR-006): the caller is signed in but did not author this
+# idea, and is not an admin either.
+IDEA_NOT_AUTHOR_DELETE = ErrorCode(
+    status.HTTP_403_FORBIDDEN, "Only the author can delete this idea."
+)
+
+# PATCH /ideas/{id}, DELETE /ideas/{id}: the id in the path matches no idea.
 IDEA_NOT_FOUND = ErrorCode(status.HTTP_404_NOT_FOUND, "Idea not found.")

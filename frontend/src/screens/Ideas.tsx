@@ -12,7 +12,7 @@ import { getSessionToken } from "@/lib/api";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const { Button, Empty, Input, Label, Textarea } = UI;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const { Plus, AlertCircle, Edit, Trash } = Icons;
+const { Plus, AlertCircle, CheckCircle, Edit, Trash } = Icons;
 
 const PRODUCT = "Voting ideas";
 const SCREEN = "Ideas";
@@ -22,6 +22,8 @@ const DESCRIPTION_MAX = 2000;
 
 // Visible messages (word for word, approved screen spec):
 const MSG_NOT_AUTHOR_EDIT = "Only the author can edit this idea";
+const MSG_NOT_AUTHOR_DELETE = "Only the author can delete this idea";
+const MSG_IDEA_DELETED = "Idea deleted";
 
 // A readable, deterministic id for a dynamic element: lower-cased words joined
 // by single hyphens, kept to at most 40 characters including the suffix that
@@ -101,6 +103,8 @@ export default function Screen() {
   // Delete-idea confirmation (US-008).
   const [deleteTarget, setDeleteTarget] = React.useState(null);
   const [deleteBusy, setDeleteBusy] = React.useState(false);
+  const [deleteError, setDeleteError] = React.useState(null);
+  const [deleteNotice, setDeleteNotice] = React.useState(null);
 
   React.useEffect(() => {
     let active = true;
@@ -236,26 +240,42 @@ export default function Screen() {
     }
   };
 
+  const openDeleteModal = (idea) => {
+    setDeleteError(null);
+    setDeleteTarget(idea);
+  };
+
   const closeDeleteModal = () => {
     if (deleteBusy) return;
     setDeleteTarget(null);
+    setDeleteError(null);
   };
 
   const confirmDelete = async () => {
     if (!deleteTarget || deleteBusy) return;
     setDeleteBusy(true);
+    setDeleteError(null);
     try {
-      const { error } = await api.DELETE(`/ideas/${deleteTarget.id}`);
+      const { error, response } = await api.DELETE(`/ideas/${deleteTarget.id}`);
       if (error) {
         setDeleteBusy(false);
+        // AC-021 / NFR-006: a non-author's delete is refused, worded exactly as the
+        // approved screen states it; anything else falls back to a generic retry.
+        setDeleteError(
+          response && response.status === 403
+            ? MSG_NOT_AUTHOR_DELETE
+            : "Could not delete this idea. Please try again.",
+        );
         return;
       }
       // AC-020: the idea and its upvotes are gone from the public list at once.
       setIdeas((prev) => prev.filter((idea) => idea.id !== deleteTarget.id));
       setDeleteBusy(false);
       setDeleteTarget(null);
+      setDeleteNotice(MSG_IDEA_DELETED);
     } catch {
       setDeleteBusy(false);
+      setDeleteError("Could not reach the server. Please try again.");
     }
   };
 
@@ -335,6 +355,21 @@ export default function Screen() {
                 <AlertCircle size={14} />
               </span>
               <span>{guestNotice}</span>
+            </p>
+          ) : null}
+          {deleteNotice ? (
+            <p
+              className="mx-auto flex max-w-2xl items-start justify-center gap-2 px-4 py-3 text-[11px] uppercase tracking-[0.18em]"
+              style={{
+                border: `1px solid ${brand.accentColor}`,
+                color: brand.primaryColor,
+                backgroundColor: `${brand.accentColor}22`,
+              }}
+            >
+              <span className="mt-px shrink-0" aria-hidden>
+                <CheckCircle size={14} />
+              </span>
+              <span>{deleteNotice}</span>
             </p>
           ) : null}
         </div>
@@ -444,7 +479,7 @@ export default function Screen() {
                         <Button
                           type="button"
                           data-testid="delete-btn"
-                          onClick={() => setDeleteTarget(idea)}
+                          onClick={() => openDeleteModal(idea)}
                           className="flex items-center gap-1.5 px-3 py-1.5 text-[10px]"
                           style={quietBtn}
                         >
@@ -600,6 +635,18 @@ export default function Screen() {
               “{deleteTarget.title}” and every vote cast on it will be gone from the board. This
               cannot be undone.
             </p>
+            <div aria-live="polite">
+              {deleteError ? (
+                <p
+                  role="alert"
+                  className="mt-4 flex items-start gap-2 px-3 py-2 text-left text-[12px]"
+                  style={{ border: `1px solid ${brand.accentColor}`, color: brand.primaryColor }}
+                >
+                  <AlertCircle size={14} aria-hidden />
+                  <span>{deleteError}</span>
+                </p>
+              ) : null}
+            </div>
             <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Button
                 type="button"

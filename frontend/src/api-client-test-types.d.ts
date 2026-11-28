@@ -21,12 +21,13 @@ declare module "@/api/client" {
 
   type OpenapiFetchMediaType = import("openapi-fetch").MediaType;
   type OpenapiFetchClient = import("openapi-fetch").Client<paths, OpenapiFetchMediaType>;
-  type OpenapiFetchClientMethod<Method extends "get" | "post" | "patch"> =
+  type OpenapiFetchClientMethod<Method extends "get" | "post" | "patch" | "delete"> =
     import("openapi-fetch").ClientMethod<paths, Method, OpenapiFetchMediaType>;
 
-  export const api: Omit<OpenapiFetchClient, "GET" | "POST" | "PATCH"> & {
+  export const api: Omit<OpenapiFetchClient, "GET" | "POST" | "PATCH" | "DELETE"> & {
     GET: MockedFunction<OpenapiFetchClientMethod<"get">>;
     POST: MockedFunction<OpenapiFetchClientMethod<"post">>;
     PATCH: MockedFunction<OpenapiFetchClientMethod<"patch">>;
+    DELETE: MockedFunction<OpenapiFetchClientMethod<"delete">>;
   };
 }

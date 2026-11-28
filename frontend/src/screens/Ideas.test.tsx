@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 // time), so stubbing global fetch per test is too late to reach it. Mocking
 // the generated client itself is the seam the screen actually calls through.
 vi.mock("@/api/client", () => ({
-  api: { GET: vi.fn(), POST: vi.fn(), PATCH: vi.fn() },
+  api: { GET: vi.fn(), POST: vi.fn(), PATCH: vi.fn(), DELETE: vi.fn() },
 }));
 
 import { api } from "@/api/client";
@@ -382,5 +382,78 @@ describe("Idea Board", () => {
 
     expect(await screen.findByText("Title or description is too long")).toBeInTheDocument();
     expect(api.PATCH).not.toHaveBeenCalled();
+  });
+
+  it("[AC-020] the author confirms deletion, the idea is removed from the board, and a confirmation is shown", async () => {
+    setSessionToken("session-token-1");
+    api.GET.mockResolvedValue({
+      data: [{ id: "idea-1", title: "Dark mode", description: "A dark theme", upvoteCount: 3 }],
+      error: undefined,
+    });
+    api.DELETE.mockResolvedValue({
+      data: undefined,
+      error: undefined,
+      response: new Response(null, { status: 204 }),
+    });
+    renderScreen();
+
+    const list = await screen.findByTestId("all-ideas-list");
+    expect(within(list).getByText("Dark mode")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("delete-btn"));
+    const modal = await screen.findByTestId("delete-this-idea-its-upvotes-are-r-modal");
+    fireEvent.click(within(modal).getByTestId("delete-idea-btn"));
+
+    await waitFor(() => expect(api.DELETE).toHaveBeenCalledWith("/ideas/idea-1"));
+    expect(
+      screen.queryByTestId("delete-this-idea-its-upvotes-are-r-modal"),
+    ).not.toBeInTheDocument();
+    expect(await screen.findByText("Idea deleted")).toBeInTheDocument();
+    expect(screen.queryByText("Dark mode")).not.toBeInTheDocument();
+  });
+
+  it("[AC-020] keeping the idea closes the modal without calling the delete endpoint", async () => {
+    setSessionToken("session-token-1");
+    api.GET.mockResolvedValue({
+      data: [{ id: "idea-1", title: "Dark mode", description: "A dark theme", upvoteCount: 3 }],
+      error: undefined,
+    });
+    renderScreen();
+
+    await screen.findByTestId("all-ideas-list");
+    fireEvent.click(screen.getByTestId("delete-btn"));
+    const modal = await screen.findByTestId("delete-this-idea-its-upvotes-are-r-modal");
+    fireEvent.click(within(modal).getByTestId("keep-idea-btn"));
+
+    expect(
+      screen.queryByTestId("delete-this-idea-its-upvotes-are-r-modal"),
+    ).not.toBeInTheDocument();
+    expect(api.DELETE).not.toHaveBeenCalled();
+    const list = screen.getByTestId("all-ideas-list");
+    expect(within(list).getByText("Dark mode")).toBeInTheDocument();
+  });
+
+  it("[AC-021] a non-author's delete attempt is refused and the idea stays on the board", async () => {
+    setSessionToken("session-token-1");
+    api.GET.mockResolvedValue({
+      data: [{ id: "idea-1", title: "Dark mode", description: "A dark theme", upvoteCount: 3 }],
+      error: undefined,
+    });
+    api.DELETE.mockResolvedValue({
+      error: { detail: "Only the author can delete this idea." },
+      response: new Response(null, { status: 403 }),
+    });
+    renderScreen();
+
+    await screen.findByTestId("all-ideas-list");
+    fireEvent.click(screen.getByTestId("delete-btn"));
+    const modal = await screen.findByTestId("delete-this-idea-its-upvotes-are-r-modal");
+    fireEvent.click(within(modal).getByTestId("delete-idea-btn"));
+
+    expect(await screen.findByText("Only the author can delete this idea")).toBeInTheDocument();
+    // The modal stays open on a refused delete, and the board still shows the idea.
+    expect(screen.getByTestId("delete-this-idea-its-upvotes-are-r-modal")).toBeInTheDocument();
+    const list = screen.getByTestId("all-ideas-list");
+    expect(within(list).getByText("Dark mode")).toBeInTheDocument();
   });
 });

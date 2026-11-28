@@ -120,7 +120,15 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete Idea
+         * @description Deletes an idea the signed-in caller authored, along with its upvotes, so it no
+         *     longer appears in the public list (AC-020). A caller who is signed in but did not
+         *     author this idea, and is not an admin, is refused as IDEA_NOT_AUTHOR_DELETE, and the
+         *     idea is left untouched (AC-021, NFR-006). An admin may delete any idea. An id that
+         *     matches no idea is refused as IDEA_NOT_FOUND.
+         */
+        delete: operations["delete_idea_ideas__id__delete"];
         options?: never;
         head?: never;
         /**
@@ -468,6 +476,56 @@ export interface operations {
             };
             /** @description Your session has expired. Please log in again. */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_idea_ideas__id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Your session has expired. Please log in again. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Only the author can delete this idea. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Idea not found. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -1,13 +1,19 @@
-"""Unit tests for the ranking logic behind GET /ideas (US-001.1)."""
+"""Unit tests for the ranking logic behind GET /ideas (US-001.1), and for deleting an
+idea (US-008)."""
 
+import secrets
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
+import pytest
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from app.auth import USER_ROLE, ensure_user, find_user
+from app.auth import ADMIN_ROLE, USER_ROLE, ensure_user, find_user
+from app.errors import IDEA_NOT_AUTHOR_DELETE, IDEA_NOT_FOUND
 from app.models import Idea, Vote
-from app.routers.ideas import list_ideas
+from app.routers.ideas import create_idea, delete_idea, list_ideas
+from app.schemas import IdeaCreate
 
 
 def _make_voter(session: Session, *, n: int) -> str:
@@ -100,3 +106,74 @@ def test_ac003_empty_board_returns_empty_list_without_error(db_session: Session)
     result = list_ideas(db_session)
 
     assert result == []
+
+
+def _make_signed_in_user(db_session: Session, *, role: str = USER_ROLE):
+    email = f"idea-deleter-{uuid4().hex[:12]}@example.com"
+    ensure_user(db_session, email=email, password=secrets.token_urlsafe(), role=role)
+    return find_user(db_session, email)
+
+
+def _create_idea(db_session: Session, author) -> Idea:
+    created = create_idea(
+        IdeaCreate(title="Dark mode", description="Add a dark theme to the board"),
+        author,
+        db_session,
+    )
+    return db_session.get(Idea, created.id)
+
+
+def test_ac020_the_author_deletes_their_idea_and_its_upvotes(db_session: Session) -> None:
+    author = _make_signed_in_user(db_session)
+    idea = _create_idea(db_session, author)
+    voter = _make_signed_in_user(db_session)
+    _vote(db_session, idea_id=idea.id, user_id=voter.id)
+
+    delete_idea(idea.id, author, db_session)
+
+    assert db_session.get(Idea, idea.id) is None
+    assert db_session.query(Vote).filter(Vote.idea_id == idea.id).count() == 0
+
+
+def test_ac020_the_deleted_idea_no_longer_appears_in_the_public_list(
+    db_session: Session,
+) -> None:
+    author = _make_signed_in_user(db_session)
+    idea = _create_idea(db_session, author)
+
+    delete_idea(idea.id, author, db_session)
+
+    assert idea.id not in [i.id for i in list_ideas(db_session)]
+
+
+def test_ac021_a_non_author_is_refused_and_the_idea_is_unchanged(db_session: Session) -> None:
+    author = _make_signed_in_user(db_session)
+    other = _make_signed_in_user(db_session)
+    idea = _create_idea(db_session, author)
+
+    with pytest.raises(HTTPException) as excinfo:
+        delete_idea(idea.id, other, db_session)
+
+    assert excinfo.value.status_code == IDEA_NOT_AUTHOR_DELETE.status
+    assert excinfo.value.detail == IDEA_NOT_AUTHOR_DELETE.message
+    assert db_session.get(Idea, idea.id) is not None
+
+
+def test_ac021_an_id_matching_no_idea_is_refused_as_not_found(db_session: Session) -> None:
+    author = _make_signed_in_user(db_session)
+
+    with pytest.raises(HTTPException) as excinfo:
+        delete_idea(str(uuid4()), author, db_session)
+
+    assert excinfo.value.status_code == IDEA_NOT_FOUND.status
+    assert excinfo.value.detail == IDEA_NOT_FOUND.message
+
+
+def test_nfr006_an_admin_may_delete_an_idea_they_did_not_author(db_session: Session) -> None:
+    author = _make_signed_in_user(db_session)
+    admin = _make_signed_in_user(db_session, role=ADMIN_ROLE)
+    idea = _create_idea(db_session, author)
+
+    delete_idea(idea.id, admin, db_session)
+
+    assert db_session.get(Idea, idea.id) is None

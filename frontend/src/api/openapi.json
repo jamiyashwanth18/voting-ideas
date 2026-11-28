@@ -297,6 +297,54 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "Ideas"
+        ],
+        "summary": "Delete Idea",
+        "description": "Deletes an idea the signed-in caller authored, along with its upvotes, so it no\nlonger appears in the public list (AC-020). A caller who is signed in but did not\nauthor this idea, and is not an admin, is refused as IDEA_NOT_AUTHOR_DELETE, and the\nidea is left untouched (AC-021, NFR-006). An admin may delete any idea. An id that\nmatches no idea is refused as IDEA_NOT_FOUND.",
+        "operationId": "delete_idea_ideas__id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Your session has expired. Please log in again."
+          },
+          "403": {
+            "description": "Only the author can delete this idea."
+          },
+          "404": {
+            "description": "Idea not found."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/health": {

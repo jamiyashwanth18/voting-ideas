@@ -16,9 +16,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.auth import current_user
+from app.auth import ADMIN_ROLE, current_user
 from app.database import get_db
-from app.errors import IDEA_NOT_AUTHOR, IDEA_NOT_FOUND, SESSION_EXPIRED
+from app.errors import IDEA_NOT_AUTHOR, IDEA_NOT_AUTHOR_DELETE, IDEA_NOT_FOUND, SESSION_EXPIRED
 from app.models import Idea, User, Vote
 from app.schemas import IdeaCreate, IdeaRead, IdeaUpdate
 
@@ -106,3 +106,33 @@ def update_idea(
     return IdeaRead(
         id=idea.id, title=idea.title, description=idea.description, upvote_count=vote_count
     )
+
+
+@router.delete(
+    "/ideas/{id}",
+    status_code=204,
+    responses={
+        SESSION_EXPIRED.status: {"description": SESSION_EXPIRED.message},
+        IDEA_NOT_AUTHOR_DELETE.status: {"description": IDEA_NOT_AUTHOR_DELETE.message},
+        IDEA_NOT_FOUND.status: {"description": IDEA_NOT_FOUND.message},
+    },
+)
+def delete_idea(
+    id: str,
+    user: Annotated[User, Depends(current_user)],
+    session: Annotated[Session, Depends(get_db)],
+) -> None:
+    """Deletes an idea the signed-in caller authored, along with its upvotes, so it no
+    longer appears in the public list (AC-020). A caller who is signed in but did not
+    author this idea, and is not an admin, is refused as IDEA_NOT_AUTHOR_DELETE, and the
+    idea is left untouched (AC-021, NFR-006). An admin may delete any idea. An id that
+    matches no idea is refused as IDEA_NOT_FOUND.
+    """
+    idea = session.get(Idea, id)
+    if idea is None:
+        raise HTTPException(IDEA_NOT_FOUND.status, IDEA_NOT_FOUND.message)
+    if idea.author_id != user.id and user.role != ADMIN_ROLE:
+        raise HTTPException(IDEA_NOT_AUTHOR_DELETE.status, IDEA_NOT_AUTHOR_DELETE.message)
+    session.query(Vote).filter(Vote.idea_id == idea.id).delete()
+    session.delete(idea)
+    session.commit()

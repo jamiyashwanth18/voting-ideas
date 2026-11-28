@@ -421,6 +421,14 @@ def test_tc062_edit_rejected_when_description_is_empty(client: TestClient) -> No
     assert matches[0]["description"] == original_description
 
 
+def _vote(client: TestClient, *, token: str, idea_id: str) -> None:
+    vote_response = client.post(
+        f"/ideas/{idea_id}/vote",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert vote_response.status_code == 200, vote_response.text
+
+
 def test_tc063_edit_rejected_when_title_exceeds_allowed_length(client: TestClient) -> None:
     """AC-019: a title over the allowed length is rejected with a validation
     message, and the idea is left unchanged."""
@@ -447,3 +455,57 @@ def test_tc063_edit_rejected_when_title_exceeds_allowed_length(client: TestClien
     matches = [item for item in list_response.json() if item["title"] == original_title]
     assert len(matches) == 1
     assert matches[0]["description"] == original_description
+
+
+# --- DELETE /ideas/{id} (US-008) ----------------------------------------------------
+
+
+def test_tc032_author_deletes_own_idea_and_its_upvotes(client: TestClient) -> None:
+    """AC-020: when the author deletes their idea, the idea and its upvotes are
+    removed and the idea no longer appears in the public list."""
+    title = "Dark mode for the board"
+    description = "Add a dark theme toggle"
+
+    _, ada_token = _register_and_login(client, email="ada@example.com")
+    idea_id = _create_idea(client, token=ada_token, title=title, description=description)
+
+    _, bob_token = _register_and_login(client, email="bob@example.com")
+    _vote(client, token=bob_token, idea_id=idea_id)
+
+    delete_response = client.delete(
+        f"/ideas/{idea_id}",
+        headers={"Authorization": f"Bearer {ada_token}"},
+    )
+
+    assert delete_response.status_code == 204, delete_response.text
+
+    list_response = client.get("/ideas")
+
+    assert list_response.status_code == 200
+    assert all(item["title"] != title for item in list_response.json())
+
+
+def test_tc035_non_author_cannot_delete_another_users_idea(client: TestClient) -> None:
+    """AC-021/NFR-006: a logged-in user who is not the author of an idea is refused
+    when attempting to delete it, and the idea remains on the board unchanged."""
+    title = "Weekly digest email"
+    description = "Send a weekly summary of top ideas"
+
+    _, carol_token = _register_and_login(client, email="carol@example.com")
+    idea_id = _create_idea(client, token=carol_token, title=title, description=description)
+
+    _, dave_token = _register_and_login(client, email="dave@example.com")
+
+    delete_response = client.delete(
+        f"/ideas/{idea_id}",
+        headers={"Authorization": f"Bearer {dave_token}"},
+    )
+
+    assert delete_response.status_code == 403
+
+    list_response = client.get("/ideas")
+
+    assert list_response.status_code == 200
+    matches = [item for item in list_response.json() if item["title"] == title]
+    assert len(matches) == 1
+    assert matches[0]["description"] == description
