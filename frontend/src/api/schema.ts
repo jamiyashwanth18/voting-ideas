@@ -95,7 +95,14 @@ export interface paths {
         /** List Ideas */
         get: operations["list_ideas_ideas_get"];
         put?: never;
-        /** Create Idea */
+        /**
+         * Create Idea
+         * @description Creates the idea attributed to the signed-in caller, starting at zero upvotes
+         *     (AC-014). An empty title or description, or one over the length limit, never
+         *     reaches here: IdeaCreate's own validation refuses it first, as a 422 (AC-015). A
+         *     caller with no valid session is refused the same SESSION_EXPIRED way as any other
+         *     action that needs login, and no idea is created (AC-016).
+         */
         post: operations["create_idea_ideas_post"];
         delete?: never;
         options?: never;
@@ -146,7 +153,12 @@ export interface components {
         };
         /**
          * IdeaCreate
-         * @description POST /ideas body: a new idea's title and short description.
+         * @description POST /ideas body: a new idea's title and short description (US-006).
+         *
+         *     Both fields must be non-empty and within the allowed length (AC-014); an empty
+         *     title or description, or one over the limit, is rejected here, by FastAPI's own
+         *     422 validation response, before any handler runs (AC-015). The author is never
+         *     read from this body: it is always the signed-in caller (app/auth.py's `current_user`).
          */
         IdeaCreate: {
             /** Title */
@@ -411,6 +423,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["IdeaRead"];
                 };
+            };
+            /** @description Your session has expired. Please log in again. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

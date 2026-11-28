@@ -43,6 +43,19 @@ class IdeaRead(ApiModel):
     upvote_count: int
 
 
+class IdeaCreate(ApiModel):
+    """POST /ideas body: a new idea's title and short description (US-006).
+
+    Both fields must be non-empty and within the allowed length (AC-014); an empty
+    title or description, or one over the limit, is rejected here, by FastAPI's own
+    422 validation response, before any handler runs (AC-015). The author is never
+    read from this body: it is always the signed-in caller (app/auth.py's `current_user`).
+    """
+
+    title: str = Field(min_length=1, max_length=200)
+    description: str = Field(min_length=1, max_length=2000)
+
+
 class RegisterRequest(ApiModel):
     """POST /auth/register body: the email and password a visitor chooses (AC-006).
 

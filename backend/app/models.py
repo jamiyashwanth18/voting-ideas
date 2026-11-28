@@ -49,6 +49,9 @@ class Idea(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, nullable=False)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str] = mapped_column(String(2000), nullable=False)
+    # Who posted it (US-006, AC-014): always the signed-in caller, never read from the
+    # request body.
+    author_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

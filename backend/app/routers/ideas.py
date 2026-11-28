@@ -13,24 +13,16 @@ from typing import Annotated
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends
-from pydantic import Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.api_model import ApiModel
 from app.auth import current_user
 from app.database import get_db
+from app.errors import SESSION_EXPIRED
 from app.models import Idea, User, Vote
-from app.schemas import IdeaRead
+from app.schemas import IdeaCreate, IdeaRead
 
 router = APIRouter(tags=["Ideas"])
-
-
-class IdeaCreate(ApiModel):
-    """POST /ideas body: a new idea's title and short description."""
-
-    title: str = Field(min_length=1, max_length=200)
-    description: str = Field(min_length=1, max_length=2000)
 
 
 @router.get("/ideas")
@@ -59,13 +51,23 @@ def list_ideas(session: Annotated[Session, Depends(get_db)]) -> list[IdeaRead]:
     ]
 
 
-@router.post("/ideas", status_code=201)
+@router.post(
+    "/ideas",
+    status_code=201,
+    responses={SESSION_EXPIRED.status: {"description": SESSION_EXPIRED.message}},
+)
 def create_idea(
     body: IdeaCreate,
     user: Annotated[User, Depends(current_user)],
     session: Annotated[Session, Depends(get_db)],
 ) -> IdeaRead:
-    idea = Idea(id=str(uuid4()), title=body.title, description=body.description)
+    """Creates the idea attributed to the signed-in caller, starting at zero upvotes
+    (AC-014). An empty title or description, or one over the length limit, never
+    reaches here: IdeaCreate's own validation refuses it first, as a 422 (AC-015). A
+    caller with no valid session is refused the same SESSION_EXPIRED way as any other
+    action that needs login, and no idea is created (AC-016).
+    """
+    idea = Idea(id=str(uuid4()), title=body.title, description=body.description, author_id=user.id)
     session.add(idea)
     session.commit()
     return IdeaRead(id=idea.id, title=idea.title, description=idea.description, upvote_count=0)

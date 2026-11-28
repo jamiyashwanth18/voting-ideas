@@ -17,8 +17,8 @@ const { Plus, AlertCircle, Edit, Trash } = Icons;
 const PRODUCT = "Voting ideas";
 const SCREEN = "Ideas";
 
-const TITLE_MAX = 120;
-const DESCRIPTION_MAX = 500;
+const TITLE_MAX = 200;
+const DESCRIPTION_MAX = 2000;
 
 // A readable, deterministic id for a dynamic element: lower-cased words joined
 // by single hyphens, kept to at most 40 characters including the suffix that
@@ -177,15 +177,11 @@ export default function Screen() {
     const description = formDescription.trim();
     // AC-015 / AC-019: empty or over-length text is rejected, nothing is sent.
     if (!title || !description) {
-      setFormError("Title and short description are both required.");
+      setFormError("Title and description are required");
       return;
     }
-    if (title.length > TITLE_MAX) {
-      setFormError(`Title must be ${TITLE_MAX} characters or fewer.`);
-      return;
-    }
-    if (description.length > DESCRIPTION_MAX) {
-      setFormError(`Description must be ${DESCRIPTION_MAX} characters or fewer.`);
+    if (title.length > TITLE_MAX || description.length > DESCRIPTION_MAX) {
+      setFormError("Title or description is too long");
       return;
     }
 
@@ -508,7 +504,12 @@ export default function Screen() {
               ) : null}
             </div>
 
-            <form className="mt-5 space-y-4" onSubmit={handlePublish} noValidate>
+            <form
+              data-testid="form-1"
+              className="mt-5 space-y-4"
+              onSubmit={handlePublish}
+              noValidate
+            >
               <div>
                 <Label htmlFor="idea-title">Title</Label>
                 <Input

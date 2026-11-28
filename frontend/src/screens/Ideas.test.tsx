@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -6,10 +6,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 // time), so stubbing global fetch per test is too late to reach it. Mocking
 // the generated client itself is the seam the screen actually calls through.
 vi.mock("@/api/client", () => ({
-  api: { GET: vi.fn() },
+  api: { GET: vi.fn(), POST: vi.fn() },
 }));
 
 import { api } from "@/api/client";
+import { clearSessionToken, setSessionToken } from "@/lib/api";
 import Screen from "./Ideas";
 
 function renderScreen() {
@@ -23,6 +24,7 @@ function renderScreen() {
 describe("Idea Board", () => {
   afterEach(() => {
     vi.resetAllMocks();
+    clearSessionToken();
   });
 
   it("[AC-001] lists every idea ranked highest upvotes first, each with its title, description and upvote count", async () => {
@@ -199,5 +201,80 @@ describe("Idea Board", () => {
     expect(root.className).toContain("lg:px-10");
     expect(root.className).toContain("max-w-6xl");
     expect(root.className).toContain("w-full");
+  });
+
+  it("[AC-016] refuses a guest who tries to open the post-an-idea form, without showing the modal", async () => {
+    api.GET.mockResolvedValue({ data: [], error: undefined });
+    renderScreen();
+    await screen.findByTestId("no-ideas-yet-be-the-first-to-post-empty");
+
+    fireEvent.click(screen.getByTestId("post-an-idea-btn"));
+
+    expect(await screen.findByText("Log in or register to post an idea")).toBeInTheDocument();
+    expect(screen.queryByTestId("post-an-idea-modal")).not.toBeInTheDocument();
+    expect(api.POST).not.toHaveBeenCalled();
+  });
+
+  it("[AC-014] a signed-in user posts an idea, which is created, starts at zero upvotes, and appears in the list", async () => {
+    setSessionToken("session-token-1");
+    api.GET.mockResolvedValue({ data: [], error: undefined });
+    api.POST.mockResolvedValue({
+      data: { id: "idea-new", title: "Dark mode", description: "A dark theme", upvoteCount: 0 },
+      error: undefined,
+    });
+    renderScreen();
+    await screen.findByTestId("no-ideas-yet-be-the-first-to-post-empty");
+
+    fireEvent.click(screen.getByTestId("post-an-idea-btn"));
+    const modal = await screen.findByTestId("post-an-idea-modal");
+    expect(within(modal).getByTestId("form-1")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByTestId("title-input"), { target: { value: "Dark mode" } });
+    fireEvent.change(screen.getByTestId("short-description-input"), {
+      target: { value: "A dark theme" },
+    });
+    fireEvent.click(screen.getByTestId("publish-idea-btn"));
+
+    await waitFor(() =>
+      expect(api.POST).toHaveBeenCalledWith("/ideas", {
+        body: { title: "Dark mode", description: "A dark theme" },
+      }),
+    );
+    expect(screen.queryByTestId("post-an-idea-modal")).not.toBeInTheDocument();
+    const list = await screen.findByTestId("all-ideas-list");
+    expect(within(list).getByText("Dark mode")).toBeInTheDocument();
+    expect(within(list).getByText("0")).toBeInTheDocument();
+  });
+
+  it("[AC-015] rejects an empty title or description with a validation message, and posts nothing", async () => {
+    setSessionToken("session-token-1");
+    api.GET.mockResolvedValue({ data: [], error: undefined });
+    renderScreen();
+    await screen.findByTestId("no-ideas-yet-be-the-first-to-post-empty");
+
+    fireEvent.click(screen.getByTestId("post-an-idea-btn"));
+    await screen.findByTestId("post-an-idea-modal");
+    fireEvent.click(screen.getByTestId("publish-idea-btn"));
+
+    expect(await screen.findByText("Title and description are required")).toBeInTheDocument();
+    expect(api.POST).not.toHaveBeenCalled();
+  });
+
+  it("[AC-015] rejects a title or description over the length limit, and posts nothing", async () => {
+    setSessionToken("session-token-1");
+    api.GET.mockResolvedValue({ data: [], error: undefined });
+    renderScreen();
+    await screen.findByTestId("no-ideas-yet-be-the-first-to-post-empty");
+
+    fireEvent.click(screen.getByTestId("post-an-idea-btn"));
+    await screen.findByTestId("post-an-idea-modal");
+    fireEvent.change(screen.getByTestId("title-input"), { target: { value: "x".repeat(201) } });
+    fireEvent.change(screen.getByTestId("short-description-input"), {
+      target: { value: "A short description" },
+    });
+    fireEvent.click(screen.getByTestId("publish-idea-btn"));
+
+    expect(await screen.findByText("Title or description is too long")).toBeInTheDocument();
+    expect(api.POST).not.toHaveBeenCalled();
   });
 });
