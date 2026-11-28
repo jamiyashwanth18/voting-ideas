@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, UniqueConstraint, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, UniqueConstraint, func, true
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -15,6 +15,10 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255), nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[str] = mapped_column(String(50), nullable=False)
+    # Whether this account may still log in (app/auth.py's `authenticate`). Every account
+    # starts active; a deactivated one is refused at login the same generic way as any
+    # other wrong credential (AC-010, NFR-004).
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=true())
 
 
 class UserSession(Base):

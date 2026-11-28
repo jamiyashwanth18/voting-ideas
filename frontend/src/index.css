@@ -15,6 +15,15 @@
   --brand-background: #eef1e6;
 }
 
+html,
+body {
+  /* NFR-009: the board must stay usable at mobile widths without a
+     horizontal scrollbar even if a screen briefly renders something wider
+     than the viewport (e.g. a long unbroken word) while it loads. */
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
 body {
   background: var(--brand-background);
   color: var(--brand-fg);

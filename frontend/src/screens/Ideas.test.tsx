@@ -121,4 +121,83 @@ describe("Idea Board", () => {
     fireEvent.click(screen.getByTestId("post-an-idea-btn"));
     expect(await screen.findByText("Log in or register to post an idea")).toBeInTheDocument();
   });
+
+  it("[AC-004] keeps the idea list in a single, non-horizontally-scrolling column at mobile width", async () => {
+    api.GET.mockResolvedValue({
+      data: [
+        {
+          id: "idea-1",
+          title: "Dark mode for the board",
+          description: "A low-light theme for night reading.",
+          upvoteCount: 42,
+        },
+        {
+          id: "idea-2",
+          title: "Export all ideas to CSV",
+          description: "One download with every idea.",
+          upvoteCount: 8,
+        },
+      ],
+      error: undefined,
+    });
+    const { container } = renderScreen();
+
+    const list = await screen.findByTestId("all-ideas-list");
+    // One column until the `lg` breakpoint: at a mobile width no row has to
+    // share horizontal space with a neighbour, so nothing needs to scroll
+    // sideways to be read.
+    expect(list.className).toContain("grid-cols-1");
+    expect(list.className).not.toMatch(/(?<![a-z:-])grid-cols-[2-9]\b/);
+
+    // The root wrapper clips anything that would otherwise force a horizontal
+    // scrollbar and gives the content breathing room off the viewport edge.
+    const root = container.firstChild as HTMLElement;
+    expect(root.className).toContain("overflow-x-hidden");
+    expect(root.className).toContain("px-4");
+
+    // Long title/description text wraps instead of being laid out on one line,
+    // which is what would force the viewport to scroll horizontally.
+    const card = screen.getByTestId("dark-mode-for-the-board-posted-by-a-card");
+    const title = within(card).getByText("Dark mode for the board");
+    expect(title.className).toContain("break-words");
+    const description = within(card).getByText("A low-light theme for night reading.");
+    expect(description.className).toContain("break-words");
+
+    // The action buttons wrap onto further lines rather than overflowing.
+    expect(screen.getByTestId("upvoted-42-btn").closest("div").className).toContain("flex-wrap");
+  });
+
+  it("[AC-005] lays the idea list out across the available width at desktop widths", async () => {
+    api.GET.mockResolvedValue({
+      data: [
+        {
+          id: "idea-1",
+          title: "Dark mode for the board",
+          description: "A low-light theme for night reading.",
+          upvoteCount: 42,
+        },
+        {
+          id: "idea-2",
+          title: "Export all ideas to CSV",
+          description: "One download with every idea.",
+          upvoteCount: 8,
+        },
+      ],
+      error: undefined,
+    });
+    const { container } = renderScreen();
+
+    const list = await screen.findByTestId("all-ideas-list");
+    // From the `lg` breakpoint up, the list spreads its cards across two
+    // columns instead of staying a single narrow column, so a wide viewport's
+    // width is put to use.
+    expect(list.className).toContain("lg:grid-cols-2");
+
+    // The root wrapper grows its padding at wider breakpoints and caps its own
+    // width so lines of text stay a readable length even on very wide screens.
+    const root = container.firstChild as HTMLElement;
+    expect(root.className).toContain("lg:px-10");
+    expect(root.className).toContain("max-w-6xl");
+    expect(root.className).toContain("w-full");
+  });
 });

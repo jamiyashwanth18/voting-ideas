@@ -74,7 +74,9 @@ export interface paths {
         put?: never;
         /**
          * Logout
-         * @description Revokes the current session token server-side (AC-013, NFR-003).
+         * @description Revokes the current session token server-side (AC-013, NFR-003), confirming it
+         *     in the 200 response the case calls for (TC-001, TC-002): the session is gone, not
+         *     merely acknowledged with no body.
          */
         post: operations["logout_auth_logout_post"];
         delete?: never;
@@ -93,7 +95,8 @@ export interface paths {
         /** List Ideas */
         get: operations["list_ideas_ideas_get"];
         put?: never;
-        post?: never;
+        /** Create Idea */
+        post: operations["create_idea_ideas_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -140,6 +143,16 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /**
+         * IdeaCreate
+         * @description POST /ideas body: a new idea's title and short description.
+         */
+        IdeaCreate: {
+            /** Title */
+            title: string;
+            /** Description */
+            description: string;
         };
         /**
          * IdeaRead
@@ -338,11 +351,15 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Successful Response */
-            204: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
             };
             /** @description Your session has expired. Please log in again. */
             401: {
@@ -369,6 +386,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IdeaRead"][];
+                };
+            };
+        };
+    };
+    create_idea_ideas_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IdeaCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdeaRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

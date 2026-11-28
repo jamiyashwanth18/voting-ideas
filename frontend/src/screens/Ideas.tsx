@@ -280,7 +280,10 @@ export default function Screen() {
   };
 
   return (
-    <div className="space-y-8" style={{ color: brand.primaryColor, fontFamily: brand.fontBody }}>
+    <div
+      className="mx-auto w-full max-w-6xl space-y-8 overflow-x-hidden px-4 py-6 sm:px-6 sm:py-8 lg:px-10 lg:py-10"
+      style={{ color: brand.primaryColor, fontFamily: brand.fontBody }}
+    >
       <header className="space-y-5">
         <div className="grid grid-cols-12 items-end gap-5">
           <div className="col-span-12 text-center sm:col-span-8 sm:text-left">
@@ -332,7 +335,7 @@ export default function Screen() {
         </div>
       </header>
 
-      <section aria-labelledby="all-ideas" className="p-6 sm:p-7" style={frame}>
+      <section aria-labelledby="all-ideas" className="p-6 sm:p-7 lg:p-8" style={frame}>
         <div className="text-center">
           <h2 id="all-ideas" className="text-sm" style={caps}>
             All ideas
@@ -368,7 +371,10 @@ export default function Screen() {
             />
           </div>
         ) : (
-          <ul data-testid="all-ideas-list" className="mt-5">
+          <ul
+            data-testid="all-ideas-list"
+            className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6"
+          >
             {ideas.map((idea, index) => {
               const cardTestId = makeTestId(`${idea.title} posted by a board member`, "-card");
               const upvoteTestId = makeTestId(`Upvoted ${idea.upvoteCount}`, "-btn");
@@ -377,9 +383,10 @@ export default function Screen() {
                 <li
                   key={idea.id}
                   data-testid={cardTestId}
-                  style={{ borderTop: index === 0 ? "none" : `1px solid ${brand.accentColor}66` }}
+                  className="min-w-0"
+                  style={{ border: `1px solid ${brand.accentColor}66`, borderRadius: brand.radius }}
                 >
-                  <div className="flex w-full items-center gap-4 px-2 py-4 text-left">
+                  <div className="flex w-full items-start gap-4 px-3 py-4 text-left sm:items-center">
                     <span
                       className="w-8 shrink-0 text-center text-xs"
                       style={{ ...num, color: brand.accentColor, fontFamily: brand.fontHeading }}
@@ -387,11 +394,11 @@ export default function Screen() {
                       {String(index + 1).padStart(2, "0")}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-xs sm:text-sm" style={caps}>
+                      <span className="block break-words text-xs sm:text-sm" style={caps}>
                         {idea.title}
                       </span>
                       <span
-                        className="mt-1 block text-[11px] leading-relaxed"
+                        className="mt-1 block break-words text-[11px] leading-relaxed"
                         style={{ color: brand.neutralColor }}
                       >
                         {idea.description}
@@ -407,7 +414,7 @@ export default function Screen() {
                       </span>
                     </span>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2 px-2 pb-4">
+                  <div className="flex flex-wrap items-center gap-2 px-3 pb-4">
                     <Button
                       type="button"
                       data-testid={upvoteTestId}
