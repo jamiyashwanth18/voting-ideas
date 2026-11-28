@@ -28,3 +28,10 @@ INVALID_CREDENTIALS = ErrorCode(status.HTTP_401_UNAUTHORIZED, "Incorrect email o
 SESSION_EXPIRED = ErrorCode(
     status.HTTP_401_UNAUTHORIZED, "Your session has expired. Please log in again."
 )
+
+# PATCH /ideas/{id} (AC-018, NFR-006): the caller is signed in but did not author this
+# idea. The same refusal covers a later delete attempt by a non-author (NFR-006).
+IDEA_NOT_AUTHOR = ErrorCode(status.HTTP_403_FORBIDDEN, "Only the author can edit this idea.")
+
+# PATCH /ideas/{id}: the id in the path matches no idea.
+IDEA_NOT_FOUND = ErrorCode(status.HTTP_404_NOT_FOUND, "Idea not found.")

@@ -12,15 +12,15 @@ login (app/auth.py's `current_user`).
 from typing import Annotated
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.auth import current_user
 from app.database import get_db
-from app.errors import SESSION_EXPIRED
+from app.errors import IDEA_NOT_AUTHOR, IDEA_NOT_FOUND, SESSION_EXPIRED
 from app.models import Idea, User, Vote
-from app.schemas import IdeaCreate, IdeaRead
+from app.schemas import IdeaCreate, IdeaRead, IdeaUpdate
 
 router = APIRouter(tags=["Ideas"])
 
@@ -71,3 +71,38 @@ def create_idea(
     session.add(idea)
     session.commit()
     return IdeaRead(id=idea.id, title=idea.title, description=idea.description, upvote_count=0)
+
+
+@router.patch(
+    "/ideas/{id}",
+    responses={
+        SESSION_EXPIRED.status: {"description": SESSION_EXPIRED.message},
+        IDEA_NOT_AUTHOR.status: {"description": IDEA_NOT_AUTHOR.message},
+        IDEA_NOT_FOUND.status: {"description": IDEA_NOT_FOUND.message},
+    },
+)
+def update_idea(
+    id: str,
+    body: IdeaUpdate,
+    user: Annotated[User, Depends(current_user)],
+    session: Annotated[Session, Depends(get_db)],
+) -> IdeaRead:
+    """Updates the title and description of an idea the signed-in caller authored
+    (AC-017). An empty title or description, or one over the length limit, never
+    reaches here: IdeaUpdate's own validation refuses it first, as a 422, leaving the
+    original idea unchanged (AC-019). A caller who is signed in but did not author this
+    idea is refused as IDEA_NOT_AUTHOR, and the idea is left unchanged (AC-018,
+    NFR-006). An id that matches no idea is refused as IDEA_NOT_FOUND.
+    """
+    idea = session.get(Idea, id)
+    if idea is None:
+        raise HTTPException(IDEA_NOT_FOUND.status, IDEA_NOT_FOUND.message)
+    if idea.author_id != user.id:
+        raise HTTPException(IDEA_NOT_AUTHOR.status, IDEA_NOT_AUTHOR.message)
+    idea.title = body.title
+    idea.description = body.description
+    session.commit()
+    vote_count = session.scalar(select(func.count(Vote.id)).where(Vote.idea_id == idea.id)) or 0
+    return IdeaRead(
+        id=idea.id, title=idea.title, description=idea.description, upvote_count=vote_count
+    )

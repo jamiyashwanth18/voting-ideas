@@ -1,6 +1,6 @@
 // Every component test mocks the generated API client wholesale:
 //
-//   vi.mock("@/api/client", () => ({ api: { GET: vi.fn(), POST: vi.fn() } }));
+//   vi.mock("@/api/client", () => ({ api: { GET: vi.fn(), POST: vi.fn(), PATCH: vi.fn() } }));
 //
 // `vi.mock` only replaces the module at runtime -- `tsc` still type-checks every
 // `import { api } from "@/api/client"` against client.ts's own declared type, which
@@ -21,11 +21,12 @@ declare module "@/api/client" {
 
   type OpenapiFetchMediaType = import("openapi-fetch").MediaType;
   type OpenapiFetchClient = import("openapi-fetch").Client<paths, OpenapiFetchMediaType>;
-  type OpenapiFetchClientMethod<Method extends "get" | "post"> =
+  type OpenapiFetchClientMethod<Method extends "get" | "post" | "patch"> =
     import("openapi-fetch").ClientMethod<paths, Method, OpenapiFetchMediaType>;
 
-  export const api: Omit<OpenapiFetchClient, "GET" | "POST"> & {
+  export const api: Omit<OpenapiFetchClient, "GET" | "POST" | "PATCH"> & {
     GET: MockedFunction<OpenapiFetchClientMethod<"get">>;
     POST: MockedFunction<OpenapiFetchClientMethod<"post">>;
+    PATCH: MockedFunction<OpenapiFetchClientMethod<"patch">>;
   };
 }

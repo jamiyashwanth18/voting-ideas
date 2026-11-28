@@ -110,6 +110,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ideas/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Idea
+         * @description Updates the title and description of an idea the signed-in caller authored
+         *     (AC-017). An empty title or description, or one over the length limit, never
+         *     reaches here: IdeaUpdate's own validation refuses it first, as a 422, leaving the
+         *     original idea unchanged (AC-019). A caller who is signed in but did not author this
+         *     idea is refused as IDEA_NOT_AUTHOR, and the idea is left unchanged (AC-018,
+         *     NFR-006). An id that matches no idea is refused as IDEA_NOT_FOUND.
+         */
+        patch: operations["update_idea_ideas__id__patch"];
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -179,6 +204,23 @@ export interface components {
             description: string;
             /** Upvotecount */
             upvoteCount: number;
+        };
+        /**
+         * IdeaUpdate
+         * @description PATCH /ideas/{id} body: the author's edited title and description (US-007).
+         *
+         *     Same bounds as IdeaCreate (AC-019): an empty title or description, or one over the
+         *     allowed length, is rejected here, by FastAPI's own 422 validation response, before
+         *     any handler runs, and the original idea is left unchanged. Whether the caller may
+         *     edit this idea at all -- only its author may (AC-018, NFR-006) -- is checked in the
+         *     handler, never here: it depends on the signed-in caller and the idea in the
+         *     database, neither of which this model has.
+         */
+        IdeaUpdate: {
+            /** Title */
+            title: string;
+            /** Description */
+            description: string;
         };
         /**
          * LoginRequest
@@ -426,6 +468,62 @@ export interface operations {
             };
             /** @description Your session has expired. Please log in again. */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_idea_ideas__id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IdeaUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdeaRead"];
+                };
+            };
+            /** @description Your session has expired. Please log in again. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Only the author can edit this idea. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Idea not found. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

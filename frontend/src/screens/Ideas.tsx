@@ -20,6 +20,9 @@ const SCREEN = "Ideas";
 const TITLE_MAX = 200;
 const DESCRIPTION_MAX = 2000;
 
+// Visible messages (word for word, approved screen spec):
+const MSG_NOT_AUTHOR_EDIT = "Only the author can edit this idea";
+
 // A readable, deterministic id for a dynamic element: lower-cased words joined
 // by single hyphens, kept to at most 40 characters including the suffix that
 // names the kind of control (e.g. "-card", "-btn"), never cut mid-way through
@@ -189,12 +192,18 @@ export default function Screen() {
     setFormBusy(true);
     try {
       if (postMode === "edit" && editingId) {
-        const { data, error } = await api.PATCH(`/ideas/${editingId}`, {
+        const { data, error, response } = await api.PATCH(`/ideas/${editingId}`, {
           body: { title, description },
         });
         if (error || !data) {
           setFormBusy(false);
-          setFormError("Could not save your changes. Please try again.");
+          // AC-018 / NFR-006: a non-author's edit is refused, worded exactly as the
+          // approved screen states it; anything else falls back to a generic retry.
+          setFormError(
+            response && response.status === 403
+              ? MSG_NOT_AUTHOR_EDIT
+              : "Could not save your changes. Please try again.",
+          );
           return;
         }
         setIdeas((prev) =>

@@ -232,6 +232,73 @@
         ]
       }
     },
+    "/ideas/{id}": {
+      "patch": {
+        "tags": [
+          "Ideas"
+        ],
+        "summary": "Update Idea",
+        "description": "Updates the title and description of an idea the signed-in caller authored\n(AC-017). An empty title or description, or one over the length limit, never\nreaches here: IdeaUpdate's own validation refuses it first, as a 422, leaving the\noriginal idea unchanged (AC-019). A caller who is signed in but did not author this\nidea is refused as IDEA_NOT_AUTHOR, and the idea is left unchanged (AC-018,\nNFR-006). An id that matches no idea is refused as IDEA_NOT_FOUND.",
+        "operationId": "update_idea_ideas__id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdeaUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdeaRead"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Your session has expired. Please log in again."
+          },
+          "403": {
+            "description": "Only the author can edit this idea."
+          },
+          "404": {
+            "description": "Idea not found."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -346,6 +413,29 @@
         ],
         "title": "IdeaRead",
         "description": "One idea as shown on the public board (US-001)."
+      },
+      "IdeaUpdate": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "description"
+        ],
+        "title": "IdeaUpdate",
+        "description": "PATCH /ideas/{id} body: the author's edited title and description (US-007).\n\nSame bounds as IdeaCreate (AC-019): an empty title or description, or one over the\nallowed length, is rejected here, by FastAPI's own 422 validation response, before\nany handler runs, and the original idea is left unchanged. Whether the caller may\nedit this idea at all -- only its author may (AC-018, NFR-006) -- is checked in the\nhandler, never here: it depends on the signed-in caller and the idea in the\ndatabase, neither of which this model has."
       },
       "LoginRequest": {
         "properties": {

@@ -261,3 +261,189 @@ def test_tc052_reject_idea_creation_without_a_session(client: TestClient) -> Non
 
     assert list_response.status_code == 200
     assert all(item["title"] != title for item in list_response.json())
+
+
+# --- PATCH /ideas/{id} (US-007) ----------------------------------------------------
+
+
+def _create_idea(client: TestClient, *, token: str, title: str, description: str) -> str:
+    create_response = client.post(
+        "/ideas",
+        json={"title": title, "description": description},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert create_response.status_code == 201, create_response.text
+    return create_response.json()["id"]
+
+
+def test_tc054_author_edits_idea_with_valid_changes(client: TestClient) -> None:
+    """AC-017: the author can update their idea's title and description, and the
+    change is reflected in the public list."""
+    original_title = "Dark mode for the board"
+    original_description = "Add a dark theme option"
+    new_title = "Dark mode for the board (updated)"
+    new_description = "Add a dark theme toggle in settings"
+
+    _, token = _register_and_login(client, email="alice@example.com")
+    idea_id = _create_idea(
+        client, token=token, title=original_title, description=original_description
+    )
+
+    patch_response = client.patch(
+        f"/ideas/{idea_id}",
+        json={"title": new_title, "description": new_description},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert patch_response.status_code == 200, patch_response.text
+    patched = patch_response.json()
+    assert patched["title"] == new_title
+    assert patched["description"] == new_description
+
+    list_response = client.get("/ideas")
+
+    assert list_response.status_code == 200
+    matches = [item for item in list_response.json() if item["title"] == new_title]
+    assert len(matches) == 1
+    assert matches[0]["description"] == new_description
+
+
+def test_tc056_non_author_edit_attempt_is_refused(client: TestClient) -> None:
+    """AC-018/NFR-006: a logged-in user who is not the author cannot edit another
+    user's idea, and the idea is left unchanged."""
+    original_title = "Dark mode for the board"
+    original_description = "Add a dark theme option"
+
+    _, ada_token = _register_and_login(client, email="ada@example.com")
+    idea_id = _create_idea(
+        client, token=ada_token, title=original_title, description=original_description
+    )
+
+    _, bob_token = _register_and_login(client, email="bob@example.com")
+
+    patch_response = client.patch(
+        f"/ideas/{idea_id}",
+        json={"title": "Hacked title", "description": "Hacked description"},
+        headers={"Authorization": f"Bearer {bob_token}"},
+    )
+
+    assert patch_response.status_code == 403
+
+    list_response = client.get("/ideas")
+
+    assert list_response.status_code == 200
+    matches = [item for item in list_response.json() if item["title"] == original_title]
+    assert len(matches) == 1
+    assert matches[0]["description"] == original_description
+
+
+def test_tc058_edit_rejected_when_title_is_empty(client: TestClient) -> None:
+    """AC-019: an empty title is rejected with a validation message, and the idea
+    is left unchanged."""
+    original_title = "Shared whiteboard mode"
+    original_description = "Allow multiple people to edit the same board"
+
+    _, token = _register_and_login(client, email="carol@example.com")
+    idea_id = _create_idea(
+        client, token=token, title=original_title, description=original_description
+    )
+
+    patch_response = client.patch(
+        f"/ideas/{idea_id}",
+        json={"title": "", "description": original_description},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert patch_response.status_code == 400
+
+    list_response = client.get("/ideas")
+
+    assert list_response.status_code == 200
+    matches = [item for item in list_response.json() if item["title"] == original_title]
+    assert len(matches) == 1
+    assert matches[0]["description"] == original_description
+
+
+def test_tc059_edit_rejected_when_description_exceeds_allowed_length(
+    client: TestClient,
+) -> None:
+    """AC-019: a description over the allowed length is rejected with a validation
+    message, and the idea is left unchanged."""
+    original_title = "Offline mode"
+    original_description = "Let users browse ideas without internet"
+    over_length_description = "A" * 5000
+
+    _, token = _register_and_login(client, email="dave@example.com")
+    idea_id = _create_idea(
+        client, token=token, title=original_title, description=original_description
+    )
+
+    patch_response = client.patch(
+        f"/ideas/{idea_id}",
+        json={"title": original_title, "description": over_length_description},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert patch_response.status_code == 400
+
+    list_response = client.get("/ideas")
+
+    assert list_response.status_code == 200
+    matches = [item for item in list_response.json() if item["title"] == original_title]
+    assert len(matches) == 1
+    assert matches[0]["description"] == original_description
+
+
+def test_tc062_edit_rejected_when_description_is_empty(client: TestClient) -> None:
+    """AC-019: an empty description is rejected with a validation message, and the
+    idea is left unchanged."""
+    original_title = "Mobile app"
+    original_description = "Build a companion mobile app"
+
+    _, token = _register_and_login(client, email="erin@example.com")
+    idea_id = _create_idea(
+        client, token=token, title=original_title, description=original_description
+    )
+
+    patch_response = client.patch(
+        f"/ideas/{idea_id}",
+        json={"title": "Mobile app v2", "description": ""},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert patch_response.status_code == 400
+
+    list_response = client.get("/ideas")
+
+    assert list_response.status_code == 200
+    matches = [item for item in list_response.json() if item["title"] == original_title]
+    assert len(matches) == 1
+    assert matches[0]["description"] == original_description
+
+
+def test_tc063_edit_rejected_when_title_exceeds_allowed_length(client: TestClient) -> None:
+    """AC-019: a title over the allowed length is rejected with a validation
+    message, and the idea is left unchanged."""
+    original_title = "Keyboard shortcuts"
+    original_description = "Add shortcuts for common actions"
+    over_length_title = "B" * 5000
+
+    _, token = _register_and_login(client, email="frank@example.com")
+    idea_id = _create_idea(
+        client, token=token, title=original_title, description=original_description
+    )
+
+    patch_response = client.patch(
+        f"/ideas/{idea_id}",
+        json={"title": over_length_title, "description": original_description},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert patch_response.status_code == 400
+
+    list_response = client.get("/ideas")
+
+    assert list_response.status_code == 200
+    matches = [item for item in list_response.json() if item["title"] == original_title]
+    assert len(matches) == 1
+    assert matches[0]["description"] == original_description

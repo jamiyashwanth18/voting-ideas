@@ -43,6 +43,21 @@ class IdeaRead(ApiModel):
     upvote_count: int
 
 
+class IdeaUpdate(ApiModel):
+    """PATCH /ideas/{id} body: the author's edited title and description (US-007).
+
+    Same bounds as IdeaCreate (AC-019): an empty title or description, or one over the
+    allowed length, is rejected here, by FastAPI's own 422 validation response, before
+    any handler runs, and the original idea is left unchanged. Whether the caller may
+    edit this idea at all -- only its author may (AC-018, NFR-006) -- is checked in the
+    handler, never here: it depends on the signed-in caller and the idea in the
+    database, neither of which this model has.
+    """
+
+    title: str = Field(min_length=1, max_length=200)
+    description: str = Field(min_length=1, max_length=2000)
+
+
 class IdeaCreate(ApiModel):
     """POST /ideas body: a new idea's title and short description (US-006).
 

@@ -10,17 +10,26 @@ from app.models import Idea, Vote
 from app.routers.ideas import list_ideas
 
 
-def _make_idea(session: Session, *, title: str, description: str, created_at: datetime) -> Idea:
-    idea = Idea(id=str(uuid4()), title=title, description=description, created_at=created_at)
-    session.add(idea)
-    session.flush()
-    return idea
-
-
 def _make_voter(session: Session, *, n: int) -> str:
     email = f"voter-{n}-{uuid4().hex[:8]}@example.com"
     ensure_user(session, email=email, password="irrelevant-pw", role=USER_ROLE)
     return find_user(session, email).id
+
+
+def _make_idea(session: Session, *, title: str, description: str, created_at: datetime) -> Idea:
+    # author_id is NOT NULL (US-006, AC-014): every idea here is attributed to a fresh
+    # user made just to own it, since this file is testing ranking, not authorship.
+    author_id = _make_voter(session, n=hash((title, description)) % 1_000_000)
+    idea = Idea(
+        id=str(uuid4()),
+        title=title,
+        description=description,
+        created_at=created_at,
+        author_id=author_id,
+    )
+    session.add(idea)
+    session.flush()
+    return idea
 
 
 def _vote(session: Session, *, idea_id: str, user_id: str) -> None:
